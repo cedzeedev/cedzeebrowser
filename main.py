@@ -1,74 +1,102 @@
-## je vais commenter mon code -> ça vous permet de comprendre à quoi servent mes lignes ;)
-#ici j'importe tous les modules nécessaires
+import sys
+import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QToolBar, QLineEdit, QAction
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
-import sys
-import os
 
-#pour éviter de créer des fenêtes supplémentaires, on vérifie si l'application à déjà une instance ouverte
-application = QApplication.instance()
-#si il n'y a pas d'instance on en crée une
-if not application:
-    application = QApplication(sys.argv)
+class CedzeeBrowser(QMainWindow):
+    """Classe principale pour le navigateur CEDZEE."""
 
-# Charge le fichier local index.html
-local_path = os.path.abspath("index.html")
+    def __init__(self, local_path):
+        """Initialise la fenêtre principale et le navigateur."""
+        super().__init__()
+        self.local_path = local_path
+        self.init_ui()
 
+    def init_ui(self):
+        """Initialise l'interface utilisateur."""
+        self.setWindowTitle("CEDZEE Browser")
+        self.resize(1200, 800)
+        self.move(300, 50)
 
-##fenêtre
-window = QMainWindow()
-#titre
-window.setWindowTitle("CEDZEE Browser")
-#taille
-window.resize(1200,800)
-#faculatif mais pour un confort: définir la position d'apparition de la fenêtre
-window.move(300,50)
+        # Initialise le navigateur web
+        self.browser = QWebEngineView()
+        self.browser.setUrl(QUrl.fromLocalFile(self.local_path))
+        self.setCentralWidget(self.browser)
 
-##navigateur
-#on initialise la vue
-browser = QWebEngineView()
-browser.setUrl(QUrl.fromLocalFile(local_path)) #page internet où se lance le navigateur
-window.setCentralWidget(browser) #on explique que le navigateur est le composant principal de notre fenêtre
+        # Crée la barre d'outils de navigation
+        self.create_toolbar()
 
-##outils de navigation et interface
-#barre d'adresse
-menu = QToolBar("Menu de navigation") #créer une barre des tâches nommé "menu"
-window.addToolBar(menu)
+    def create_toolbar(self):
+        """Crée et configure la barre d'outils de navigation."""
+        menu = QToolBar("Menu de navigation")
+        self.addToolBar(menu)
 
-def home():
-    adress_input.returnPressed.connect(lambda: browser.setUrl(QUrl.fromLocalFile(local_path))) #lorsque la touche est pressée, on change l'url affichée à l'aide de browser et des données contenues dans adress_input
-    browser.urlChanged.connect(lambda url: adress_input.setText(url.toString())) # Met à jour la barre d'adresse lors de la navigation
+        # Bouton Précédent
+        back_btn = QAction("←", self)
+        back_btn.triggered.connect(self.browser.back)
+        menu.addAction(back_btn)
 
-# Bouton Précédent
-back_btn = QAction("←", window)
-back_btn.triggered.connect(browser.back)
-menu.addAction(back_btn)
+        # Bouton Suivant
+        forward_btn = QAction("→", self)
+        forward_btn.triggered.connect(self.browser.forward)
+        menu.addAction(forward_btn)
 
-# Bouton Suivant
-forward_btn = QAction("→", window)
-forward_btn.triggered.connect(browser.forward)
-menu.addAction(forward_btn)
+        # Bouton Recharger
+        reload_btn = QAction("⟳", self)
+        reload_btn.triggered.connect(self.browser.reload)
+        menu.addAction(reload_btn)
 
-# Bouton Recharger
-reload_btn = QAction("⟳", window)
-reload_btn.triggered.connect(browser.reload)
-menu.addAction(reload_btn)
+        # Bouton Home
+        home_btn = QAction("⌂", self)
+        home_btn.triggered.connect(self.go_home)
+        menu.addAction(home_btn)
 
-#bouton home
-home_btn = QAction("⌂", window)
-home_btn.triggered.connect(home)
-menu.addAction(home_btn)
+        # Barre d'adresse
+        self.adress_input = QLineEdit()
+        self.adress_input.returnPressed.connect(self.navigate_to_url)
+        self.browser.urlChanged.connect(self.update_address_bar)
+        menu.addWidget(self.adress_input)
 
-#barre d'adresse
-adress_input = QLineEdit()
-adress_input.returnPressed.connect(lambda: browser.setUrl(QUrl(adress_input.text()))) #lorsque la touche est pressée, on change l'url affichée à l'aide de browser et des données contenues dans adress_input
-browser.urlChanged.connect(lambda url: adress_input.setText(url.toString())) # Met à jour la barre d'adresse lors de la navigation
-menu.addWidget(adress_input) #on ajoute la barre de navigation à notre barre des tâches
-window.show()
+    def go_home(self):
+        """Navigue vers la page d'accueil."""
+        self.browser.setUrl(QUrl.fromLocalFile(self.local_path))
 
+    def navigate_to_url(self):
+        """Navigue vers l'URL saisie dans la barre d'adresse."""
+        url = self.adress_input.text()
+        self.browser.setUrl(QUrl(url))
 
+    def update_address_bar(self, url):
+        """Met à jour la barre d'adresse avec l'URL actuelle."""
+        self.adress_input.setText(url.toString())
 
+def create_application():
+    """Crée une instance de QApplication si elle n'existe pas déjà."""
+    application = QApplication.instance()
+    if not application:
+        application = QApplication(sys.argv)
+    return application
 
-#on execute
-application.exec_()
+def load_local_file(file_path):
+    """Charge un fichier local et retourne son chemin absolu."""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Le fichier {file_path} n'existe pas.")
+    return os.path.abspath(file_path)
+
+def main():
+    """Fonction principale pour initialiser et exécuter l'application."""
+    application = create_application()
+    try:
+        local_path = load_local_file("index.html")
+    except FileNotFoundError as e:
+        print(e)
+        sys.exit(1)
+
+    # Crée et affiche la fenêtre principale
+    window = CedzeeBrowser(local_path)
+    window.show()
+    sys.exit(application.exec_())
+
+if __name__ == "__main__":
+    main()
