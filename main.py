@@ -6,9 +6,11 @@ import os
 
 try:
 
-    from PyQt5.QtWidgets import QApplication, QMainWindow, QToolBar, QLineEdit, QAction, QTabWidget, QVBoxLayout, QWidget, QMenu
+    from PyQt5.QtCore import Qt, QUrl
     from PyQt5.QtWebEngineWidgets import QWebEngineView
-    from PyQt5.QtCore import QUrl, Qt
+    from PyQt5.QtWidgets import (QAction, QApplication, QLineEdit, QMainWindow,
+                                 QMenu, QTabWidget, QToolBar, QVBoxLayout,
+                                 QWidget)
 
 except (ImportError, ImportWarning) as err:
 
