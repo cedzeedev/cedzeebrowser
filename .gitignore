@@ -1,0 +1,6 @@
+# venv folder
+venv/
+.venv/
+
+# IDE
+.vscode/
