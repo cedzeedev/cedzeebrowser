@@ -1,10 +1,12 @@
 try:
-    import sys
     import os
-    from PyQt6.QtWidgets import QApplication, QMainWindow, QToolBar, QLineEdit, QTabWidget, QWidget, QMenu, QVBoxLayout
+    import sys
+
+    from PyQt6.QtCore import Qt, QUrl
     from PyQt6.QtGui import QAction
-    from PyQt6.QtCore import QUrl, Qt
     from PyQt6.QtWebEngineWidgets import QWebEngineView
+    from PyQt6.QtWidgets import (QApplication, QLineEdit, QMainWindow, QMenu,
+                                 QTabWidget, QToolBar, QVBoxLayout, QWidget)
 except ImportError as e:
     print(f"Erreur d'importation : {e}")
 application = QApplication.instance()
