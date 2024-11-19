@@ -1,2 +1,2 @@
-PyQt5==5.15.11
-PyQtWebEngine==5.15.7
+PyQt6==6.7.1
+pyqt6-webengine==6.7.0
