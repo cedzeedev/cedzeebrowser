@@ -1,5 +1,4 @@
 try:
-    
     import sys
     import os
     from PyQt6.QtWidgets import QApplication, QMainWindow, QToolBar, QLineEdit, QTabWidget, QWidget, QMenu, QVBoxLayout
