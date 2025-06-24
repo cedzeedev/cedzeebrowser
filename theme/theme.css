@@ -9,26 +9,24 @@
 }
 
 body {
-    background: url("./background.svg") no-repeat;
-    background-size: cover;
+    background: linear-gradient(#423e3e, #1b0809);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    height: 100vh;
 }
 
 h1 {
     font-size: max(25px, 10vmin);
-    color: #fff;
-    background: radial-gradient(#250d68, #2d64ca);
-    padding: 10px;
-    margin: 10px;
-    border-radius: 20px;
+    background: linear-gradient(#2d64ca, #250d68);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 20px;
 }
 
 form {
-    border: 5px solid #000;
     border-radius: 20px;
     display: flex;
     flex-direction: row;

@@ -1,0 +1,7 @@
+Pokemon classic
+Dafont (https://www.dafont.com/fr/pokemon-x-and-y.font)
+
+Note de l'auteur
+Font used in XYORAS battle bars, glyphs include custom-made cyrillic and latin, the custom pokedollar is custom as the dollar sign.
+
+Mise en ligne sur DaFont : 16/05/2016

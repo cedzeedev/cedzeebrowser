@@ -1,0 +1,20 @@
+
+@import url("../font/pokemon_classic.css");
+@import url("../font/pokemon_x_and_y.css");
+@import url("../font/pokemon_solid.css");
+
+/*
+ * -------------
+ * Root
+ * -------------
+ */
+
+*, *::before, *::after {
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+    box-sizing: border-box;
+    font-family: "PokemonClassic", sans-serif;
+}
