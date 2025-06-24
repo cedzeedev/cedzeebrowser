@@ -13,8 +13,9 @@ py ./main.py
 ```txt
 ./
 ├── main.py
+├── Offline
+│   └── index.html
 ├── theme
-│   ├── background.svg
 │   └── theme.css
 └── web
     ├── index.html

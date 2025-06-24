@@ -1,22 +1,34 @@
+
 try:
+
     import os
     import sys
+
+    import requests
 
     from PyQt6.QtCore import Qt, QUrl
     from PyQt6.QtGui import QAction
     from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtWidgets import (QApplication, QLineEdit, QMainWindow, QMenu,
-                                 QTabWidget, QToolBar, QVBoxLayout, QWidget)
-except ImportError as e:
-    print(f"Erreur d'importation : {e}")
+    from PyQt6.QtWidgets import (QApplication, QLineEdit, QMainWindow, QMenu, QTabWidget, QToolBar, QVBoxLayout, QWidget)
+
+except (ImportError, ImportWarning) as err:
+
+    print(f"Import error : {err}")
+
+
 application = QApplication.instance()
+
 if not application:
     application = QApplication(sys.argv)
 
 home_url = os.path.abspath("./web/index.html")
+offline_url = os.path.abspath("./offline/index.html")
 
 class BrowserWindow(QMainWindow):
+
+
     def __init__(self):
+
         super().__init__()
         self.setWindowTitle("CEDZEE Browser")
         self.resize(1200, 800)
@@ -42,7 +54,9 @@ class BrowserWindow(QMainWindow):
 
         self.page_loaded = False 
 
+
     def add_navigation_buttons(self):
+
         back_btn = QAction("←", self)
         back_btn.triggered.connect(lambda: self.current_browser().back() if self.current_browser() else None)
         self.menu.addAction(back_btn)
@@ -59,15 +73,17 @@ class BrowserWindow(QMainWindow):
         home_btn.triggered.connect(self.go_home)
         self.menu.addAction(home_btn)
 
-        self.adress_input = QLineEdit()
-        self.adress_input.returnPressed.connect(self.navigate_to_url)
-        self.menu.addWidget(self.adress_input)
+        self.address_input = QLineEdit()
+        self.address_input.returnPressed.connect(self.navigate_to_url)
+        self.menu.addWidget(self.address_input)
 
         new_tab_btn = QAction("+", self)
         new_tab_btn.triggered.connect(self.open_new_tab)
         self.menu.addAction(new_tab_btn)
 
+
     def add_homepage_tab(self):
+
         self.browser = QWebEngineView()
         self.browser.setUrl(QUrl.fromLocalFile(home_url))
         self.browser.loadFinished.connect(self.on_homepage_loaded)
@@ -82,38 +98,63 @@ class BrowserWindow(QMainWindow):
         self.tabs.setCurrentWidget(tab)
         self.go_home()
 
+
     def on_homepage_loaded(self, ok):
+
         if ok and not self.page_loaded:
+
             self.browser.reload()
             self.page_loaded = True 
 
+
     def current_browser(self):
+
         current_tab = self.tabs.currentWidget()
         return current_tab.layout().itemAt(0).widget() if current_tab else None
 
+
     def close_tab(self, index):
+
         if self.tabs.count() > 1:
             self.tabs.removeTab(index)
 
+
     def navigate_to_url(self):
-        url = QUrl(self.adress_input.text())
+
+        url = QUrl(self.address_input.text())
+
         if url.scheme() == "":
             url.setScheme("http")
+
         if self.current_browser():
             self.current_browser().setUrl(url)
 
+
     def update_urlbar(self, url):
-        self.adress_input.setText(url.toString())
-        self.adress_input.setCursorPosition(0)
+
+        self.address_input.setText(url.toString())
+        self.address_input.setCursorPosition(0)
+
 
     def go_home(self):
+
         if self.current_browser():
-            self.current_browser().setUrl(QUrl.fromLocalFile(home_url))
+            
+            try:
+                response = requests.get('https://google.com')
+                response.raise_for_status()
+                self.current_browser().setUrl(QUrl.fromLocalFile(home_url))
+            except:
+                self.current_browser().setUrl(QUrl.fromLocalFile(offline_url))
+
 
     def open_new_tab(self):
+
         self.add_homepage_tab()
 
+
     def show_tab_context_menu(self, position):
+
         menu = QMenu()
         new_tab_action = menu.addAction("Ouvrir un nouvel onglet")
         close_tab_action = menu.addAction("Fermer cet onglet")
@@ -124,8 +165,11 @@ class BrowserWindow(QMainWindow):
         elif action == close_tab_action:
             self.close_tab(self.tabs.currentIndex())
 
+
     def handle_js_error(self, message, line, sourceID, errorMsg):
+
         print(f"Erreur JavaScript : {message} à la ligne {line} dans {sourceID}: {errorMsg}", file=sys.stderr)
+
 
 window = BrowserWindow()
 window.show()
