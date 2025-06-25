@@ -97,6 +97,10 @@ class BrowserWindow(QMainWindow):
         new_tab_btn.triggered.connect(self.open_new_tab)
         self.menu.addAction(new_tab_btn)
 
+        devtools_btn = QAction("DevTools", self)
+        devtools_btn.triggered.connect(self.open_devtools)
+        self.menu.addAction(devtools_btn)
+
 
     def add_homepage_tab(self):
 
@@ -185,6 +189,14 @@ class BrowserWindow(QMainWindow):
     def handle_js_error(self, message, line, sourceID, errorMsg):
 
         print(f"Erreur JavaScript : {message} à la ligne {line} dans {sourceID}: {errorMsg}", file=sys.stderr)
+
+    def open_devtools(self):
+        devtools = QWebEngineView()
+        devtools.setWindowTitle("DevTools")
+        devtools.resize(800, 600)
+        devtools.show()
+        self.current_browser().page().setDevToolsPage(devtools.page())
+        self.devtools = devtools
 
 
 window = BrowserWindow()
