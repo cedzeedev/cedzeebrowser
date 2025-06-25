@@ -1,28 +1,63 @@
 
 # CEDZEE Search
 
-## Utilisation
+## Powerful browser
+
+>
+> ![view1](resources/github/view1.png)
+>
+
+---
+
+## Utilization
 
 ```sh
 pip install -r requirements.txt
 py ./main.py
 ```
 
-## Organisation du code
+## Organization
+
+**Minimal configuration**:
 
 ```txt
 ./
+├── ...
 ├── main.py
-├── Offline
+├── offline
+│   ├── ...
 │   └── index.html
 ├── theme
+│   ├── ...
 │   └── theme.css
 └── web
+    ├── ...
     ├── index.html
     └── logic.js
 ```
 
-## Themes
+## Theme and color scheme
 
-`theme.css`: Feuille de style pour le theme du moteur de recherche
-`background.svg`: Fond d'écran du moteur de recherche
+- `theme/theme.css`: Style sheet for the search engine theme
+
+---
+
+## Contributing
+
+The cedzee browser source code is located in the Git repository at [github.com/cedzeedev/cedzeebrowser](https://github.com/cedzeedev/cedzeebrowser/).
+Contributions are most welcome by forking the repository and sending a pull request.
+
+> [!NOTE]
+>
+> Please respect our [organization](#organization)
+>
+
+## Credit
+
+**Contributors :**
+
+![contributors](https://contrib.rocks/image?repo=cedzeedev/cedzeebrowser)
+
+>
+> Fait avec le ❤️ par la communauté !
+>
