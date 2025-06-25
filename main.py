@@ -28,6 +28,7 @@ class BrowserWindow(QMainWindow):
 
 
     def __init__(self):
+ 
 
         super().__init__()
         self.setWindowTitle("CEDZEE Browser")
@@ -51,6 +52,21 @@ class BrowserWindow(QMainWindow):
         self.new_tab_shortcut.setShortcut("Ctrl+T")
         self.new_tab_shortcut.triggered.connect(self.open_new_tab)
         self.addAction(self.new_tab_shortcut)
+
+        self.close_tab_shortcut = QAction(self)
+        self.close_tab_shortcut.setShortcut("Ctrl+W")
+        self.close_tab_shortcut.triggered.connect(lambda: self.close_tab(self.tabs.currentIndex()))
+        self.addAction(self.close_tab_shortcut)
+
+        self.reload_shortcut = QAction(self)
+        self.reload_shortcut.setShortcut("Ctrl+R")
+        self.reload_shortcut.triggered.connect(lambda: self.current_browser().reload() if self.current_browser() else None)
+        self.addAction(self.reload_shortcut)
+
+        self.f5_shortcut = QAction(self)
+        self.f5_shortcut.setShortcut("F5")
+        self.f5_shortcut.triggered.connect(lambda: self.current_browser().reload() if self.current_browser() else None)
+        self.addAction(self.f5_shortcut)
 
         self.page_loaded = False 
 
