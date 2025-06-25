@@ -14,21 +14,24 @@ try:
 except (ImportError, ImportWarning) as err:
 
     print(f"Import error : {err}")
+    exit(1)
 
 
 application = QApplication.instance()
+directory = os.path.dirname(os.path.abspath(__file__))
 
 if not application:
     application = QApplication(sys.argv)
 
-home_url = os.path.abspath("./web/index.html")
-offline_url = os.path.abspath("./offline/index.html")
+home_url = os.path.abspath(f"{directory}/web/index.html")
+offline_url = os.path.abspath(f"{directory}/offline/index.html")
+
 
 class BrowserWindow(QMainWindow):
 
 
     def __init__(self):
- 
+
 
         super().__init__()
         self.setWindowTitle("CEDZEE Browser")
@@ -147,7 +150,16 @@ class BrowserWindow(QMainWindow):
             url.setScheme("http")
 
         if self.current_browser():
-            self.current_browser().setUrl(url)
+            
+            try:
+
+                response = requests.get('https://google.com')
+                response.raise_for_status()
+                self.current_browser().setUrl(url)
+
+            except:
+
+                self.current_browser().setUrl(QUrl.fromLocalFile(offline_url))
 
 
     def update_urlbar(self, url):
@@ -161,10 +173,13 @@ class BrowserWindow(QMainWindow):
         if self.current_browser():
             
             try:
+
                 response = requests.get('https://google.com')
                 response.raise_for_status()
                 self.current_browser().setUrl(QUrl.fromLocalFile(home_url))
+
             except:
+
                 self.current_browser().setUrl(QUrl.fromLocalFile(offline_url))
 
 
@@ -190,7 +205,9 @@ class BrowserWindow(QMainWindow):
 
         print(f"Erreur JavaScript : {message} à la ligne {line} dans {sourceID}: {errorMsg}", file=sys.stderr)
 
+
     def open_devtools(self):
+
         devtools = QWebEngineView()
         devtools.setWindowTitle("DevTools")
         devtools.resize(800, 600)
