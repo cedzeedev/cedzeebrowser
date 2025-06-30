@@ -5,6 +5,8 @@ try:
     import sys
 
     import requests
+    import csv
+    from datetime import datetime
 
     from PyQt6.QtCore import Qt, QUrl
     from PyQt6.QtGui import QAction
@@ -22,6 +24,7 @@ directory = os.path.dirname(os.path.abspath(__file__))
 
 if not application:
     application = QApplication(sys.argv)
+
 
 home_url = os.path.abspath(f"{directory}/web/index.html")
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
@@ -71,8 +74,14 @@ class BrowserWindow(QMainWindow):
         self.f5_shortcut.triggered.connect(lambda: self.current_browser().reload() if self.current_browser() else None)
         self.addAction(self.f5_shortcut)
 
-        self.page_loaded = False 
+        self.open_history_shortcut = QAction(self)
+        self.open_history_shortcut.setShortcut("Ctrl+H")
+        self.open_history_shortcut.triggered.connect(self.open_history)
+        self.addAction(self.open_history_shortcut)
 
+
+        self.page_loaded = False 
+        self.load_history()
 
     def add_navigation_buttons(self):
 
@@ -104,6 +113,10 @@ class BrowserWindow(QMainWindow):
         devtools_btn.triggered.connect(self.open_devtools)
         self.menu.addAction(devtools_btn)
 
+        history_btn = QAction("Historique", self)
+        history_btn.triggered.connect(self.open_history)
+        self.menu.addAction(history_btn)
+
 
     def add_homepage_tab(self):
 
@@ -111,6 +124,7 @@ class BrowserWindow(QMainWindow):
         self.browser.setUrl(QUrl.fromLocalFile(home_url))
         self.browser.loadFinished.connect(self.on_homepage_loaded)
         self.browser.urlChanged.connect(self.update_urlbar)
+        self.browser.titleChanged.connect(self.update_tab_title)
         self.browser.page().javaScriptConsoleMessage = self.handle_js_error  
 
         tab = QWidget()
@@ -120,6 +134,11 @@ class BrowserWindow(QMainWindow):
         self.tabs.addTab(tab, "Page d'accueil")
         self.tabs.setCurrentWidget(tab)
         self.go_home()
+
+
+    def update_tab_title(self, title):
+        index = self.tabs.currentIndex()
+        self.tabs.setTabText(index, title)
 
 
     def on_homepage_loaded(self, ok):
@@ -157,15 +176,41 @@ class BrowserWindow(QMainWindow):
                 response.raise_for_status()
                 self.current_browser().setUrl(url)
 
+                self.save_to_history(url.toString())
             except:
 
                 self.current_browser().setUrl(QUrl.fromLocalFile(offline_url))
 
 
-    def update_urlbar(self, url):
+    def save_to_history(self, url):
+        if "file://" not in url:
+            with open('history.csv', mode='a', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), url])
 
+
+
+    def load_history(self):
+        try:
+            with open('history.csv', mode='r', encoding='utf-8') as file:
+                reader = csv.reader(file)
+                self.history = [row[1] for row in reader]  # On récupère les URLs
+                self.history_index = len(self.history) - 1
+        except FileNotFoundError:
+            self.history = []
+            self.history_index = -1
+
+
+    def open_history(self):
+        if self.current_browser():
+            self.current_browser().setUrl(QUrl.fromLocalFile(os.path.abspath(f"{directory}/web/history.html")))
+
+    def update_urlbar(self, url):
         self.address_input.setText(url.toString())
         self.address_input.setCursorPosition(0)
+
+        self.save_to_history(url.toString())
+
 
 
     def go_home(self):

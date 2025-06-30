@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Historique de navigation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            text-align: center;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin: 10px 0;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        a {
+            text-decoration: none;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <h1>Historique de navigation</h1>
+    <ul id="history-list"></ul>
+
+<script>
+    fetch('../history.csv')
+        .then(response => response.text())
+        .then(data => {
+            const lines = data.trim().split('\n');
+            const list = document.getElementById('history-list');
+            lines.forEach(line => {
+                const parts = line.split(',');
+                const url = parts[1];
+                const listItem = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = url;
+                link.textContent = url;
+                link.target = "_blank";
+
+                 link.addEventListener("click", () => {
+                    window.location.href = link;
+                })
+
+                listItem.appendChild(link);
+                list.appendChild(listItem);
+            });
+        })
+        .catch(error => console.error('Erreur chargement historique:', error));
+</script>
+
+</body>
+</html>
