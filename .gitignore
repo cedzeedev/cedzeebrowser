@@ -31,5 +31,8 @@ env/
 *.exe
 *.res
 
+# HISTORY
+history.csv
+
 # __pycache__
 __pycache__/
