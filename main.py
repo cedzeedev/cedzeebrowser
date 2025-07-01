@@ -37,6 +37,7 @@ class BrowserWindow(QMainWindow):
 
         super().__init__()
         self.setWindowTitle("CEDZEE Browser")
+        
         self.resize(1200, 800)
         self.move(300, 50)
 
@@ -84,11 +85,14 @@ class BrowserWindow(QMainWindow):
         self.reload_shortcut = QAction(self)
         self.reload_shortcut.setShortcut("Ctrl+R")
         self.reload_shortcut.triggered.connect(lambda: self.current_browser().reload() if self.current_browser() else None)
+
         self.addAction(self.reload_shortcut)
 
         self.f5_shortcut = QAction(self)
         self.f5_shortcut.setShortcut("F5")
+
         self.f5_shortcut.triggered.connect(lambda: self.current_browser().reload() if self.current_browser() else None)
+
         self.addAction(self.f5_shortcut)
 
         self.open_history_shortcut = QAction(self)
@@ -174,13 +178,13 @@ class BrowserWindow(QMainWindow):
 
     def add_homepage_tab(self):
 
-        browser = QWebEngineView()
-        browser.setUrl(QUrl.fromLocalFile(home_url))
-        browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
-        browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
-        browser.page().javaScriptConsoleMessage = self.handle_js_error
+        self.browser = QWebEngineView()
+        self.browser.setUrl(QUrl.fromLocalFile(home_url))
+        self.browser.urlChanged.connect(lambda url, b=self.browser: self.update_urlbar(url))
+        self.browser.titleChanged.connect(lambda title, b=self.browser: self.update_tab_title(title, b))
+        self.browser.page().javaScriptConsoleMessage = self.handle_js_error
 
-        self.stacked_widget.addWidget(browser)
+        self.stacked_widget.addWidget(self.browser)
         tab_title = "Page d'accueil"
         item = QListWidgetItem(tab_title)
         self.sidebar.addItem(item)
@@ -188,18 +192,18 @@ class BrowserWindow(QMainWindow):
 
     def open_new_tab(self):
 
-        browser = QWebEngineView()
-        browser.setUrl(QUrl("about:blank"))
-        browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
-        browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
-        browser.page().javaScriptConsoleMessage = self.handle_js_error
+        self.browser = QWebEngineView()
+        self.browser.setUrl(QUrl.fromLocalFile(home_url))
+        self.browser.urlChanged.connect(lambda url, b=self.browser: self.update_urlbar(url))
+        self.browser.titleChanged.connect(lambda title, b=self.browser: self.update_tab_title(title, b))
+        self.browser.page().javaScriptConsoleMessage = self.handle_js_error
 
-        self.stacked_widget.addWidget(browser)
-        tab_title = "Nouvel onglet"
+        self.stacked_widget.addWidget(self.browser)
+        tab_title = "New tab"
         item = QListWidgetItem(tab_title)
         self.sidebar.addItem(item)
 
-        self.stacked_widget.setCurrentWidget(browser)
+        self.stacked_widget.setCurrentWidget(self.browser)
         self.sidebar.setCurrentItem(item)
 
     def handle_js_error(self, message, line, sourceID, errorMsg):
@@ -274,8 +278,8 @@ class BrowserWindow(QMainWindow):
         if self.current_browser():
             self.current_browser().setUrl(QUrl.fromLocalFile(os.path.abspath(f"{directory}/web/history.html")))
 
-    def update_urlbar(self, url, browser_instance):
-        if self.stacked_widget.currentWidget() == browser_instance:
+    def update_urlbar(self, url):
+        if self.stacked_widget.currentWidget() == self.browser:
             self.address_input.setText(url.toString())
             self.address_input.setCursorPosition(0)
 
