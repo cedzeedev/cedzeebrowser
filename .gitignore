@@ -30,3 +30,6 @@ env/
 *.bin
 *.exe
 *.res
+
+# __pycache__
+__pycache__
