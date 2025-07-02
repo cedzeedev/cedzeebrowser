@@ -1,6 +1,6 @@
 
+/* Existing CSS for web content (keep as is) */
 *, *::before, *::after {
-    inset: 0;
     margin: 0;
     padding: 0;
     border: 0;
@@ -69,4 +69,93 @@ a:hover {
   box-shadow: 0 6px 20px rgba(37, 13, 104, 0.9);
   transform: scale(1.05);
   cursor: pointer;
+}
+
+/* Qt Style Sheets for the browser UI */
+QMainWindow {
+    background-color: #1e1e1e; /* Dark background */
+    color: #ffffff; /* White text */
+}
+
+QToolBar {
+    background-color: #2d2d2d; /* Slightly lighter dark for toolbar */
+    border: none;
+    padding: 5px;
+    spacing: 5px;
+}
+
+QToolBar QAction {
+    color: #ffffff;
+    background-color: #3a3a3a;
+    border: 1px solid #555555;
+    border-radius: 5px;
+    padding: 5px 10px;
+    margin: 2px;
+}
+
+QToolBar QAction:hover {
+    background-color: #505050;
+}
+
+QLineEdit {
+    background-color: #3a3a3a;
+    border: 1px solid #555555;
+    border-radius: 5px;
+    color: #ffffff;
+    padding: 5px;
+}
+
+QListWidget {
+    background-color: #2d2d2d; /* Dark background for sidebar */
+    border: none;
+    padding: 5px;
+    color: #ffffff;
+}
+
+QListWidget::item {
+    background-color: #3a3a3a;
+    border-radius: 5px;
+    padding: 8px;
+    margin-bottom: 5px;
+    color: #ffffff;
+}
+
+QListWidget::item:selected {
+    background-color: #007acc; /* Highlight color for selected tab */
+    color: #ffffff;
+}
+
+QListWidget::item:hover {
+    background-color: #505050;
+}
+
+QMenu {
+    background-color: #2d2d2d;
+    border: 1px solid #555555;
+    color: #ffffff;
+}
+
+QMenu::item {
+    padding: 5px 15px;
+    color: #ffffff;
+}
+
+QMenu::item:selected {
+    background-color: #007acc;
+}
+
+/* Specific styling for QToolButton within QToolBar (for actions) */
+QToolBar QToolButton {
+    background-color: #4a4a4a; /* Slightly lighter background for better visibility */
+    border: 1px solid #666666;
+    border-radius: 5px;
+    padding: 5px 10px;
+    margin: 2px;
+    color: #ffffff;
+    font-weight: bold; /* Make text bolder */
+    font-size: 16px; /* Increase font size */
+}
+
+QToolBar QToolButton:hover {
+    background-color: #606060;
 }

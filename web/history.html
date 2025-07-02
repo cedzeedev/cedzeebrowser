@@ -4,10 +4,31 @@
     <meta charset="UTF-8">
     <title>Historique de navigation</title>
     <style>
+        :root {
+            --background-color: #f0f0f0;
+            --text-color: #000000;
+            --background-li: white;
+            --link-color: #3498db;
+            --button-bg: #f0f0f0;
+            --button-text: #000;
+            --button-border: #ccc;
+        }
+
+        body.dark-mode {
+            --background-color: #2E2E2E;
+            --text-color: #f0f0f0;
+            --background-li: #3a3a3a;
+            --link-color: #5dade2;
+            --button-bg: #3a3a3a;
+            --button-text: #f0f0f0;
+            --button-border: #555;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            background-color: #f0f0f0;
+            background-color: var(--background-color);
+            color: var(--text-color);
         }
         h1 {
             text-align: center;
@@ -18,22 +39,35 @@
         }
         li {
             margin: 10px 0;
-            background: white;
+            background: var(--background-li);
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         a {
             text-decoration: none;
-            color: #3498db;
+            color: var(--link-color);
+        }
+        #theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: 1px solid var(--button-border);
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <h1>Historique de navigation</h1>
+    <button id="theme-toggle">Changer de thème</button>
     <ul id="history-list"></ul>
 
 <script>
+    // Load history
     fetch('../history.csv')
         .then(response => response.text())
         .then(data => {
@@ -57,6 +91,25 @@
             });
         })
         .catch(error => console.error('Erreur chargement historique:', error));
+
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    themeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        if (body.classList.contains('dark-mode')) {
+            localStorage.setItem('theme', 'dark');
+        } else {
+            localStorage.setItem('theme', 'light');
+        }
+    });
+
+    // Check for saved theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        body.classList.add('dark-mode');
+    }
 </script>
 
 </body>
