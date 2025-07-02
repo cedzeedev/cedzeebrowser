@@ -1,172 +1,121 @@
-/* Existing CSS for web content (keep as is) */
-*,
-*::before,
-*::after {
+body {
+    font-family: system-ui, "Segoe UI", Arial, sans-serif;
+    background: #181a20;
+    color: #f4f6fb;
     margin: 0;
     padding: 0;
-    border: 0;
-    outline: 0;
-    box-sizing: border-box;
-    font-family: sans-serif;
 }
 
-body {
-    background: #0E1117;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
-
-h1 {
-    font-size: max(25px, 10vmin);
-    background: linear-gradient(#2d64ca, #250d68);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    margin: 20px;
-}
-
-form {
-    border-radius: 20px;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 15px rgba(45, 100, 202, 0.6);
-    background-color: #2d64ca;
-}
-
-form input[type="text"] {
-    flex: 10;
-    font-size: max(15px, 5vmin);
-    border-radius: 20px 0 0 20px;
-    padding: 10px;
-}
-
-form input[type="submit"] {
-    flex: 1;
-    font-size: max(15px, 5vmin);
-    border-radius: 0 20px 20px 0;
-    padding: 10px;
-    color: #fff;
-    background-color: #2d64ca;
+h1, h2, h3 {
+    color: #fafbfc;
+    font-weight: 600;
+    letter-spacing: 0.01em;
 }
 
 a {
-    margin-top: 20px;
-    padding: 10px 25px;
-    background: #2d64ca;
-    color: white;
-    border-radius: 30px;
+    color: #45a1ff;
     text-decoration: none;
-    font-weight: bold;
-    font-size: 1.2rem;
-    box-shadow: 0 4px 15px rgba(45, 100, 202, 0.6);
-    transition: all 0.3s ease;
+    border-radius: 3px;
+    padding: 2px 4px;
+    transition: background 0.2s, color 0.2s;
+}
+a:hover, a:focus {
+    background: #23283b;
+    color: #80caff;
 }
 
-a:hover {
-    background: #1f3a8a;
-    box-shadow: 0 6px 20px rgba(37, 13, 104, 0.9);
-    transform: scale(1.05);
+.toolbar, QToolBar {
+    background: #232634;
+    border-bottom: 1px solid #22242a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.16);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+QToolButton, button, .btn {
+    background: #222c38;
+    border: none;
+    border-radius: 7px;
+    color: #f4f6fb;
+    padding: 8px 16px;
+    font-size: 1em;
+    font-weight: 500;
     cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+    margin-right: 6px;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+QToolButton:hover, button:hover, .btn:hover {
+    background: #27344a;
+    color: #45a1ff;
+    box-shadow: 0 2px 8px rgba(69,161,255,0.10);
 }
 
-/* Qt Style Sheets for the browser UI */
-QMainWindow {
-    background-color: #0E1117;
-    /* Dark background */
-    color: #ffffff;
-    /* White text */
+.input, QLineEdit, input[type="text"], input[type="search"] {
+    background: #232634;
+    border: 1.5px solid #31344b;
+    border-radius: 6px;
+    color: #f4f6fb;
+    padding: 8px 12px;
+    font-size: 1em;
+    margin-right: 8px;
+    transition: border 0.15s;
+}
+.input:focus, QLineEdit:focus, input[type="text"]:focus, input[type="search"]:focus {
+    border: 1.5px solid #45a1ff;
+    outline: none;
 }
 
-QToolBar {
-    background-color: #161B23;
-    /* Slightly lighter dark for toolbar */
-    border: none;
-    padding: 5px;
-    margin: 5px;
+QListWidget, ul, ol {
+    background: #1c1e26;
+    border-radius: 7px;
+    border: 1px solid #232634;
+    padding: 0;
+    margin: 16px 0;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08);
 }
 
-QToolBar QAction {
-    color: #ffffff;
-    background-color: #3a3a3a;
-    border: 1px solid #555555;
+QListWidget::item, li {
+    color: #f4f6fb;
+    padding: 10px 20px;
     border-radius: 5px;
-    padding: 5px 10px;
-    margin: 2px;
+    transition: background 0.15s, color 0.15s;
+    list-style: none;
+}
+QListWidget::item:selected, li:hover {
+    background: #27344a;
+    color: #45a1ff;
 }
 
-QToolBar QAction:hover {
-    background-color: #505050;
+QMenu, menu {
+    background: #22242a;
+    color: #f4f6fb;
+    border-radius: 7px;
+    border: 1px solid #31344b;
+    padding: 8px 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+QMenu::item:selected, menu li:hover {
+    background: #27344a;
+    color: #45a1ff;
 }
 
-QLineEdit {
-    background-color: #3a3a3a;
-    border: 1px solid #555555;
+/* Scrollbar moderne */
+::-webkit-scrollbar {
+    width: 10px;
+    background: #232634;
+}
+::-webkit-scrollbar-thumb {
+    background: #31344b;
     border-radius: 5px;
-    color: #ffffff;
-    padding: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #45a1ff;
 }
 
-QListWidget {
-    background-color: #161B23;
-    /* Dark background for sidebar */
-    border: none;
-    padding: 5px;
-    color: #ffffff;
-}
-
-QListWidget::item {
-    background-color: #3a3a3a;
-    border-radius: 5px;
-    padding: 8px;
-    margin-bottom: 5px;
-    color: #ffffff;
-}
-
-QListWidget::item:selected {
-    background-color: #007acc;
-    /* Highlight color for selected tab */
-    color: #ffffff;
-}
-
-QListWidget::item:hover {
-    background-color: #505050;
-}
-
-QMenu {
-    background-color: #2d2d2d;
-    border: 1px solid #555555;
-    color: #ffffff;
-}
-
-QMenu::item {
-    padding: 5px 15px;
-    color: #ffffff;
-}
-
-QMenu::item:selected {
-    background-color: #007acc;
-}
-
-/* Specific styling for QToolButton within QToolBar (for actions) */
-QToolBar QToolButton {
-    background-color: #4a4a4a;
-    /* Slightly lighter background for better visibility */
-    border: 1px solid #666666;
-    border-radius: 5px;
-    padding: 5px 10px;
-    margin: 2px;
-    color: #ffffff;
-    font-weight: bold;
-    /* Make text bolder */
-    font-size: 16px;
-    /* Increase font size */
-}
-
-QToolBar QToolButton:hover {
-    background-color: #606060;
+/* Transitions douces pour tout */
+*, *::before, *::after {
+    transition: background 0.17s, color 0.17s, border 0.17s, box-shadow 0.17s;
 }
