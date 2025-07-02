@@ -6,12 +6,11 @@
     padding: 0;
     border: 0;
     outline: 0;
-    box-sizing: border-box;
     font-family: sans-serif;
 }
 
 body {
-    background: #0E1117;
+    background: rgb(69, 69, 69);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -21,8 +20,7 @@ body {
 
 h1 {
     font-size: max(25px, 10vmin);
-    background: linear-gradient(#2d64ca, #250d68);
-    -webkit-background-clip: text;
+    background: rgb(255, 255, 255);
     background-clip: text;
     color: transparent;
     margin: 20px;
@@ -34,7 +32,6 @@ form {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 4px 15px rgba(45, 100, 202, 0.6);
     background-color: #2d64ca;
 }
 
@@ -52,12 +49,13 @@ form input[type="submit"] {
     padding: 10px;
     color: #fff;
     background-color: #2d64ca;
+    cursor: pointer;
 }
 
 a {
     margin-top: 20px;
     padding: 10px 25px;
-    background: #2d64ca;
+    background: linear-gradient(#114aae, #2d64ca);
     color: white;
     border-radius: 30px;
     text-decoration: none;
@@ -76,18 +74,18 @@ a:hover {
 
 /* Qt Style Sheets for the browser UI */
 QMainWindow {
-    background-color: #0E1117;
+    background-color: #1e1e1e;
     /* Dark background */
     color: #ffffff;
     /* White text */
 }
 
 QToolBar {
-    background-color: #161B23;
+    background-color: #2d2d2d;
     /* Slightly lighter dark for toolbar */
     border: none;
     padding: 5px;
-    margin: 5px;
+    spacing: 5px;
 }
 
 QToolBar QAction {
@@ -112,7 +110,7 @@ QLineEdit {
 }
 
 QListWidget {
-    background-color: #161B23;
+    background-color: #2d2d2d;
     /* Dark background for sidebar */
     border: none;
     padding: 5px;
