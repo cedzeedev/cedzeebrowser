@@ -19,7 +19,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background: linear-gradient(#423e3e, #1b0809);
+    background: #0E1117;
 }
 
 canvas {
@@ -34,6 +34,7 @@ a {
     margin: 10px;
     padding: 10px;
     background-color: #171761;
+    box-shadow: 0 4px 15px rgba(45, 100, 202, 0.6);
     font-size: large;
     border-radius: 10px;
     text-decoration: none;

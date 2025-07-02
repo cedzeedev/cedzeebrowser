@@ -74,6 +74,7 @@ function Reset() {
  */
 function GameOver() {
 
+    Reset();
     Clear();
 
     ctx.font = "50px PokemonClassic";

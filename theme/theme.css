@@ -1,15 +1,17 @@
-
 /* Existing CSS for web content (keep as is) */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     margin: 0;
     padding: 0;
     border: 0;
     outline: 0;
+    box-sizing: border-box;
     font-family: sans-serif;
 }
 
 body {
-    background: linear-gradient(#423e3e, #1b0809);
+    background: #0E1117;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -32,6 +34,7 @@ form {
     flex-direction: row;
     justify-content: center;
     align-items: center;
+    box-shadow: 0 4px 15px rgba(45, 100, 202, 0.6);
     background-color: #2d64ca;
 }
 
@@ -52,36 +55,39 @@ form input[type="submit"] {
 }
 
 a {
-  margin-top: 20px;
-  padding: 10px 25px;
-  background: #2d64ca;
-  color: white;
-  border-radius: 30px;
-  text-decoration: none;
-  font-weight: bold;
-  font-size: 1.2rem;
-  box-shadow: 0 4px 15px rgba(45, 100, 202, 0.6);
-  transition: all 0.3s ease;
+    margin-top: 20px;
+    padding: 10px 25px;
+    background: #2d64ca;
+    color: white;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 15px rgba(45, 100, 202, 0.6);
+    transition: all 0.3s ease;
 }
 
 a:hover {
-  background: #1f3a8a;
-  box-shadow: 0 6px 20px rgba(37, 13, 104, 0.9);
-  transform: scale(1.05);
-  cursor: pointer;
+    background: #1f3a8a;
+    box-shadow: 0 6px 20px rgba(37, 13, 104, 0.9);
+    transform: scale(1.05);
+    cursor: pointer;
 }
 
 /* Qt Style Sheets for the browser UI */
 QMainWindow {
-    background-color: #1e1e1e; /* Dark background */
-    color: #ffffff; /* White text */
+    background-color: #0E1117;
+    /* Dark background */
+    color: #ffffff;
+    /* White text */
 }
 
 QToolBar {
-    background-color: #2d2d2d; /* Slightly lighter dark for toolbar */
+    background-color: #161B23;
+    /* Slightly lighter dark for toolbar */
     border: none;
     padding: 5px;
-    spacing: 5px;
+    margin: 5px;
 }
 
 QToolBar QAction {
@@ -106,7 +112,8 @@ QLineEdit {
 }
 
 QListWidget {
-    background-color: #2d2d2d; /* Dark background for sidebar */
+    background-color: #161B23;
+    /* Dark background for sidebar */
     border: none;
     padding: 5px;
     color: #ffffff;
@@ -121,7 +128,8 @@ QListWidget::item {
 }
 
 QListWidget::item:selected {
-    background-color: #007acc; /* Highlight color for selected tab */
+    background-color: #007acc;
+    /* Highlight color for selected tab */
     color: #ffffff;
 }
 
@@ -146,14 +154,17 @@ QMenu::item:selected {
 
 /* Specific styling for QToolButton within QToolBar (for actions) */
 QToolBar QToolButton {
-    background-color: #4a4a4a; /* Slightly lighter background for better visibility */
+    background-color: #4a4a4a;
+    /* Slightly lighter background for better visibility */
     border: 1px solid #666666;
     border-radius: 5px;
     padding: 5px 10px;
     margin: 2px;
     color: #ffffff;
-    font-weight: bold; /* Make text bolder */
-    font-size: 16px; /* Increase font size */
+    font-weight: bold;
+    /* Make text bolder */
+    font-size: 16px;
+    /* Increase font size */
 }
 
 QToolBar QToolButton:hover {

@@ -4,7 +4,7 @@
 ## Powerful browser
 
 >
-> ![view1](resources/github/view1.png)
+> ![image](resources/github/image.png)
 >
 
 ---
