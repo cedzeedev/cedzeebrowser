@@ -8,6 +8,7 @@ try:
     from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve
     from PyQt6.QtGui import QAction, QIcon
     from PyQt6.QtWebEngineWidgets import QWebEngineView
+    from PyQt6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
     from PyQt6.QtWidgets import (
         QApplication, QLineEdit, QMainWindow, QMenu, QToolBar, QWidget,
         QHBoxLayout, QStackedWidget, QListWidget, QListWidgetItem
@@ -97,6 +98,14 @@ class BrowserWindow(QMainWindow):
         # Load history
         self.load_history()
 
+        profile_path = os.path.join(os.getcwd(), "browser_data")
+
+        self.profile = QWebEngineProfile("Default", self)
+        self.profile.setPersistentStoragePath(profile_path)
+        self.profile.setCachePath(profile_path)
+        self.profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
+
+
         try:
             with open(os.path.abspath(f"{directory}/theme/theme.css"), "r") as f:
                 self.setStyleSheet(f.read())
@@ -170,6 +179,8 @@ class BrowserWindow(QMainWindow):
 
     def add_homepage_tab(self):
         browser = QWebEngineView()
+        page = QWebEnginePage(self.profile, browser)
+        browser.setPage(page)
         browser.setUrl(QUrl.fromLocalFile(home_url))
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
         browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
@@ -183,6 +194,8 @@ class BrowserWindow(QMainWindow):
 
     def open_new_tab(self):
         browser = QWebEngineView()
+        page = QWebEnginePage(self.profile, browser)
+        browser.setPage(page)
         browser.setUrl(QUrl.fromLocalFile(home_url))
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
         browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
