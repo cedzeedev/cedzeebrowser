@@ -38,3 +38,6 @@ history.csv
 __pycache__/
 # browser_data
 browser_data/
+
+# Config
+resources/config/
