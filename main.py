@@ -128,27 +128,27 @@ class BrowserWindow(QMainWindow):
 
 
     def add_navigation_buttons(self):
-        toggle_sidebar_btn = QAction(QIcon("resources/icons/menu.png"), "", self)
+        toggle_sidebar_btn = QAction(QIcon(f"{directory}/resources/icons/menu.png"), "", self)
         toggle_sidebar_btn.setToolTip("Toggle Sidebar")
         toggle_sidebar_btn.triggered.connect(self.toggle_sidebar)
         self.menu.addAction(toggle_sidebar_btn)
 
-        back_btn = QAction(QIcon("resources/icons/arrow_back.png"), "", self)
+        back_btn = QAction(QIcon(f"{directory}/resources/icons/arrow_back.png"), "", self)
         back_btn.setToolTip("Back")
         back_btn.triggered.connect(lambda: self.current_browser().back() if self.current_browser() else None)
         self.menu.addAction(back_btn)
 
-        forward_btn = QAction(QIcon("resources/icons/arrow_forward.png"), "", self)
+        forward_btn = QAction(QIcon(f"{directory}/resources/icons/arrow_forward.png"), "", self)
         forward_btn.setToolTip("Forward")
         forward_btn.triggered.connect(lambda: self.current_browser().forward() if self.current_browser() else None)
         self.menu.addAction(forward_btn)
 
-        reload_btn = QAction(QIcon("resources/icons/refresh.png"), "", self)
+        reload_btn = QAction(QIcon(f"{directory}/resources/icons/refresh.png"), "", self)
         reload_btn.setToolTip("Reload")
         reload_btn.triggered.connect(lambda: self.current_browser().reload() if self.current_browser() else None)
         self.menu.addAction(reload_btn)
 
-        home_btn = QAction(QIcon("resources/icons/home.png"), "", self)
+        home_btn = QAction(QIcon(f"{directory}/resources/icons/home.png"), "", self)
         home_btn.setToolTip("Home")
         home_btn.triggered.connect(self.go_home)
         self.menu.addAction(home_btn)
@@ -157,17 +157,17 @@ class BrowserWindow(QMainWindow):
         self.address_input.returnPressed.connect(self.navigate_to_url)
         self.menu.addWidget(self.address_input)
 
-        new_tab_btn = QAction(QIcon("resources/icons/add.png"), "", self)
+        new_tab_btn = QAction(QIcon(f"{directory}/resources/icons/add.png"), "", self)
         new_tab_btn.setToolTip("New Tab")
         new_tab_btn.triggered.connect(self.open_new_tab)
         self.menu.addAction(new_tab_btn)
 
-        devtools_btn = QAction(QIcon("resources/icons/dev.png"), "", self)
+        devtools_btn = QAction(QIcon(f"{directory}/resources/icons/dev.png"), "", self)
         devtools_btn.setToolTip("Developer Tools")
         devtools_btn.triggered.connect(self.open_devtools)
         self.menu.addAction(devtools_btn)
 
-        history_btn = QAction(QIcon("resources/icons/history.png"), "", self)
+        history_btn = QAction(QIcon(f"{directory}/resources/icons/history.png"), "", self)
         history_btn.setToolTip("History")
         history_btn.triggered.connect(self.open_history)
         self.menu.addAction(history_btn)
