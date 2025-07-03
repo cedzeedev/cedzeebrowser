@@ -113,6 +113,10 @@ class BrowserWindow(QMainWindow):
 
     def change_tab_by_sidebar(self, index):
         self.stacked_widget.setCurrentIndex(index)
+        browser = self.current_browser()
+        if browser:
+            self.update_urlbar(browser.url(), browser)
+
 
     def add_navigation_buttons(self):
         toggle_sidebar_btn = QAction(QIcon("resources/icons/menu.png"), "", self)
