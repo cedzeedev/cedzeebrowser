@@ -391,7 +391,7 @@ class BrowserWindow(QMainWindow):
         elif action == close_tab_action:
             index = self.sidebar.row(item)
             self.close_tab(index)
-
+    # merci de mettre a jour le systeme de download
     def on_downloadRequested(self, download_item: QWebEngineDownloadRequest):
         suggested_filename = download_item.suggestedFileName() or "downloaded_file"
         file_path, _ = QFileDialog.getSaveFileName(self,
