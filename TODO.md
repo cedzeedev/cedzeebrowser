@@ -1,9 +1,9 @@
 ## ✅ Task List
 
 - [ ] système de téléchargement amélioré 
-- [ ] cedzee:// 
-- [ ] favoris ( fedian )
-- [ ] extension ( antoine )
-- [ ] redesign (Léo)
+- [ ] cedzee:// (AntoineLandrieux)
+- [ ] favoris (Fedian4012)
+- [ ] extension (AntoineLandrieux)
+- [ ] redesign (Leo62-glitch)
 - [ ] paramètres
 - [ ] page de bienvenue pour premier démarrage 
