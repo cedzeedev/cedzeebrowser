@@ -28,6 +28,29 @@ h1 {
     margin: 20px;
 }
 
+h3 {
+    font-size: max(15px, 5vmin);
+    /* WTF ?? */
+    background: rgb(255, 255, 255);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    margin: 20px;
+}
+
+p {
+    color: white;
+    margin: 10px;
+    text-align: center;
+}
+
+ul {
+    padding: 0;
+    color: white;
+    margin: 10px;
+    text-align: left;
+}
+
 form {
     border-radius: 20px;
     display: flex;
