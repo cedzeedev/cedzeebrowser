@@ -1,33 +1,80 @@
+# imports
 try:
     import os
     import sys
     import requests
     import csv
+    import json
     from datetime import datetime
 
     from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve
     from PyQt6.QtGui import QAction, QIcon
     from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
+    from PyQt6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage, QWebEngineDownloadRequest
     from PyQt6.QtWidgets import (
         QApplication, QLineEdit, QMainWindow, QMenu, QToolBar, QWidget,
-        QHBoxLayout, QStackedWidget, QListWidget, QListWidgetItem
+        QHBoxLayout, QStackedWidget, QListWidget, QListWidgetItem, QFileDialog
     )
 
 except (ImportError, ImportWarning) as err:
     print(f"Import error : {err}")
     exit(1)
 
-
+# PyQt application setup
 application = QApplication.instance()
 directory = os.path.dirname(os.path.abspath(__file__))
 
 if not application:
     application = QApplication(sys.argv)
 
+# utils variables
 home_url = os.path.abspath(f"{directory}/web/index.html")
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
+version_json_url = "https://raw.githubusercontent.com/cedzeedev/cedzeebrowser/refs/heads/main/version.json"
 
+# Load local version information
+version_file_pth = f"{directory}/version.json"
+
+try:
+    with open(version_file_pth, "r", encoding="utf-8") as file:
+        data = json.load(file)
+        version = data[0].get("version", "inconnue")
+except Exception as e:
+    print(f"Erreur lors du chargement de la version : {e}")
+
+# load online version information
+def get_online_version():
+    try:
+        response = requests.get(version_json_url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        version_online = data[0].get("version", "inconnue")
+        return version_online
+    except Exception as e:
+        return "error"
+        
+# compare versions
+version_online = get_online_version()
+update_available = False
+if not version_online == "error":
+    try:
+        if version != version_online or version < version_online:
+            update_available = True
+            # téléchargement du fichier JSON version
+            response = requests.get(version_json_url, timeout=10)
+
+            if response.status_code == 200:
+                with open(f"{directory}/version_online.json", "w", encoding="utf-8") as f:
+                    f.write(response.text)
+        else:
+            update_available = False
+    except:
+        pass
+else:
+    pass
+
+
+# web browser 
 class CustomWebEnginePage(QWebEnginePage):
     def __init__(self, profile, parent=None, browser_window=None):
         super().__init__(profile, parent)
@@ -117,6 +164,7 @@ class BrowserWindow(QMainWindow):
         self.profile.setPersistentStoragePath(profile_path)
         self.profile.setCachePath(profile_path)
         self.profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
+        self.profile.downloadRequested.connect(self.on_downloadRequested)
 
 
         try:
@@ -226,6 +274,22 @@ class BrowserWindow(QMainWindow):
 
         return browser
 
+    def open_update_tab(self):
+        update_url = os.path.abspath(f"{directory}/web/update.html")
+        browser = QWebEngineView()
+        page = CustomWebEnginePage(self.profile, browser, browser_window=self)
+        browser.setPage(page)
+        browser.setUrl(QUrl.fromLocalFile(update_url))
+        browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
+        browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
+        browser.page().javaScriptConsoleMessage = self.handle_js_error
+
+        self.stacked_widget.addWidget(browser)
+        item = QListWidgetItem("Mise à jour disponible")
+        self.sidebar.addItem(item)
+        self.stacked_widget.setCurrentWidget(browser)
+        self.sidebar.setCurrentItem(item)
+
     def handle_js_error(self, message, line, sourceID, errorMsg):
         print(f"Erreur JavaScript : {message} à la ligne {line} dans {sourceID}: {errorMsg}", file=sys.stderr)
 
@@ -327,9 +391,28 @@ class BrowserWindow(QMainWindow):
         elif action == close_tab_action:
             index = self.sidebar.row(item)
             self.close_tab(index)
+    # merci de mettre a jour le systeme de download
+    def on_downloadRequested(self, download_item: QWebEngineDownloadRequest):
+        suggested_filename = download_item.suggestedFileName() or "downloaded_file"
+        file_path, _ = QFileDialog.getSaveFileName(self,
+                                                "Enregistrer le fichier",
+                                                suggested_filename)
+        if not file_path:
+            download_item.cancel()
+            return
+        download_item.setDownloadDirectory(os.path.dirname(file_path))
+        download_item.setDownloadFileName(os.path.basename(file_path))
+        download_item.accept()
+        def handle_state_change(state):
+            if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
+                print(f"Téléchargement terminé : {file_path}")
+
+        download_item.stateChanged.connect(handle_state_change)
 
 
 if __name__ == "__main__":
     window = BrowserWindow()
     window.show()
+    if update_available:
+        window.open_update_tab()
     application.exec()

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../theme/theme.css" />
+    <title>Update</title>
+</head>
+
+<body>
+
+    <h3 id="update-title">Chargement de la mise à jour...</h3>
+    <p id="version-info"></p>
+    <ul id="change-list"></ul>
+    <a class="cedzee-button-contributors" href="https://github.com/cedzeedev/cedzeebrowser/">Mettre à jour</a>
+
+    <script>
+        const title = document.getElementById("update-title");
+        const versionInfo = document.getElementById("version-info");
+        const changeList = document.getElementById("change-list");
+
+        Promise.all([
+            fetch("../version.json").then(res => {
+                if (!res.ok) throw new Error("Erreur chargement version locale");
+                return res.json();
+            }),
+            fetch("../version_online.json").then(res => {
+                if (!res.ok) throw new Error("Erreur chargement version en ligne");
+                return res.json();
+            })
+        ])
+            .then(([localData, onlineData]) => {
+                const current = localData[0];
+                const latest = onlineData[0];
+
+                if (latest.version !== current.version) {
+                    title.textContent = "Une mise à jour est disponible !";
+                    versionInfo.textContent = `Nouvelle version : ${latest.version} (publiée le ${latest.date})`;
+
+                    latest.changes.forEach(change => {
+                        const li = document.createElement("li");
+                        li.textContent = change;
+                        changeList.appendChild(li);
+                    });
+                } else {
+                    title.textContent = "Votre version est à jour.";
+                }
+            })
+            .catch(error => {
+                title.textContent = "Impossible de vérifier les mises à jour.";
+                console.error("Erreur :", error);
+            });
+    </script>
+
+</body>
+
+</html>
