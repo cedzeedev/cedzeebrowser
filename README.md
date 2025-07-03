@@ -30,9 +30,9 @@ python ./main.py
 │   ├── ...
 │   └── index.html
 ├───resources
-|   |──config
-|   |──github
-|   └──icons
+│   |──config
+│   |──github
+│   └──icons
 ├── theme
 │   ├── ...
 │   └── theme.css
