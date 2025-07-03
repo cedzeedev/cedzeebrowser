@@ -28,6 +28,16 @@ if not application:
 home_url = os.path.abspath(f"{directory}/web/index.html")
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
 
+class CustomWebEnginePage(QWebEnginePage):
+    def __init__(self, profile, parent=None, browser_window=None):
+        super().__init__(profile, parent)
+        self.browser_window = browser_window
+
+    def createWindow(self, _type):
+        if self.browser_window:
+            new_browser = self.browser_window.open_new_tab()
+            return new_browser.page()
+        return super().createWindow(_type)
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -186,7 +196,7 @@ class BrowserWindow(QMainWindow):
 
     def add_homepage_tab(self):
         browser = QWebEngineView()
-        page = QWebEnginePage(self.profile, browser)
+        page = CustomWebEnginePage(self.profile, browser, browser_window=self)
         browser.setPage(page)
         browser.setUrl(QUrl.fromLocalFile(home_url))
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
@@ -201,7 +211,7 @@ class BrowserWindow(QMainWindow):
 
     def open_new_tab(self):
         browser = QWebEngineView()
-        page = QWebEnginePage(self.profile, browser)
+        page = CustomWebEnginePage(self.profile, browser, browser_window=self)
         browser.setPage(page)
         browser.setUrl(QUrl.fromLocalFile(home_url))
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
@@ -213,6 +223,8 @@ class BrowserWindow(QMainWindow):
         self.sidebar.addItem(item)
         self.stacked_widget.setCurrentWidget(browser)
         self.sidebar.setCurrentItem(item)
+
+        return browser
 
     def handle_js_error(self, message, line, sourceID, errorMsg):
         print(f"Erreur JavaScript : {message} à la ligne {line} dans {sourceID}: {errorMsg}", file=sys.stderr)
