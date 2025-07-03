@@ -9,11 +9,13 @@
 
 ---
 
-## Utilization
+## Utilization and installation
 
 ```sh
+git clone https://github.com/cedzeedev/cedzeebrowser.git
+cd cedzeebrowser
 pip install -r requirements.txt
-py ./main.py
+python ./main.py
 ```
 
 ## Organization
@@ -27,12 +29,16 @@ py ./main.py
 ├── offline
 │   ├── ...
 │   └── index.html
+├───resources
+|   |──config
+|   |──github
+|   └──icons
 ├── theme
 │   ├── ...
 │   └── theme.css
 └── web
-    ├── ...
     ├── index.html
+    ├── history.html
     └── logic.js
 ```
 

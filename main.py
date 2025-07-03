@@ -32,6 +32,9 @@ offline_url = os.path.abspath(f"{directory}/offline/index.html")
 class BrowserWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.ensure_history_file()
+
+
         # window properties
         self.setWindowTitle("CEDZEE Browser")
         self.resize(1200, 800)
@@ -98,7 +101,7 @@ class BrowserWindow(QMainWindow):
         # Load history
         self.load_history()
 
-        profile_path = os.path.join(os.getcwd(), "browser_data")
+        profile_path = f"{directory}/browser_data"
 
         self.profile = QWebEngineProfile("Default", self)
         self.profile.setPersistentStoragePath(profile_path)
@@ -251,16 +254,26 @@ class BrowserWindow(QMainWindow):
                 self.save_to_history(url.toString())
             except requests.RequestException:
                 self.current_browser().setUrl(QUrl.fromLocalFile(offline_url))
+                
+    def ensure_history_file(self):
+        history_dir = os.path.join(directory, "resources", "config")
+        if not os.path.exists(history_dir):
+            os.makedirs(history_dir)
+        # Pas besoin de créer le fichier explicitement, 'a' le fera
 
     def save_to_history(self, url):
         if "file://" not in url:
-            with open('history.csv', mode='a', newline='', encoding='utf-8') as file:
-                writer = csv.writer(file)
-                writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), url])
+            history_path = os.path.join(directory, "resources", "config", "history.csv")
+            try:
+                with open(history_path, mode='a', newline='', encoding='utf-8') as file:
+                    writer = csv.writer(file)
+                    writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), url])
+            except Exception as e:
+                print(f"Erreur lors de l'écriture dans l'historique : {e}")
 
     def load_history(self):
         try:
-            with open('history.csv', mode='r', encoding='utf-8') as file:
+            with open(f'{directory}/resources/config/history.csv', mode='r', encoding='utf-8') as file:
                 reader = csv.reader(file)
                 self.history = [row[1] for row in reader]
                 self.history_index = len(self.history) - 1

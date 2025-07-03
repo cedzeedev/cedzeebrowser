@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <title>Historique de navigation</title>
@@ -30,24 +31,29 @@
             background-color: var(--background-color);
             color: var(--text-color);
         }
+
         h1 {
             text-align: center;
         }
+
         ul {
             list-style-type: none;
             padding: 0;
         }
+
         li {
             margin: 10px 0;
             background: var(--background-li);
             padding: 10px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         a {
             text-decoration: none;
             color: var(--link-color);
         }
+
         #theme-toggle {
             position: fixed;
             top: 20px;
@@ -61,56 +67,58 @@
         }
     </style>
 </head>
+
 <body>
     <h1>Historique de navigation</h1>
     <button id="theme-toggle">Changer de thème</button>
     <ul id="history-list"></ul>
 
-<script>
-    // Load history
-    fetch('../history.csv')
-        .then(response => response.text())
-        .then(data => {
-            const lines = data.trim().split('\n');
-            const list = document.getElementById('history-list');
-            lines.forEach(line => {
-                const parts = line.split(',');
-                const url = parts[1];
-                const listItem = document.createElement('li');
-                const link = document.createElement('a');
-                link.href = url;
-                link.textContent = url;
-                link.target = "_blank";
+    <script>
+        // Load history
+        fetch('../resources/config/history.csv')
+            .then(response => response.text())
+            .then(data => {
+                const lines = data.trim().split('\n');
+                const list = document.getElementById('history-list');
+                lines.forEach(line => {
+                    const parts = line.split(',');
+                    const url = parts[1];
+                    const listItem = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.textContent = url;
+                    link.target = "_blank";
 
-                 link.addEventListener("click", () => {
-                    window.location.href = link;
-                })
+                    link.addEventListener("click", () => {
+                        window.location.href = link;
+                    })
 
-                listItem.appendChild(link);
-                list.appendChild(listItem);
-            });
-        })
-        .catch(error => console.error('Erreur chargement historique:', error));
+                    listItem.appendChild(link);
+                    list.appendChild(listItem);
+                });
+            })
+            .catch(error => console.error('Erreur chargement historique:', error));
 
-    // Theme toggle
-    const themeToggle = document.getElementById('theme-toggle');
-    const body = document.body;
+        // Theme toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
 
-    themeToggle.addEventListener('click', () => {
-        body.classList.toggle('dark-mode');
-        if (body.classList.contains('dark-mode')) {
-            localStorage.setItem('theme', 'dark');
-        } else {
-            localStorage.setItem('theme', 'light');
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            body.classList.add('dark-mode');
         }
-    });
-
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        body.classList.add('dark-mode');
-    }
-</script>
+    </script>
 
 </body>
+
 </html>
