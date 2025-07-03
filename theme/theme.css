@@ -20,9 +20,7 @@ body {
 
 h1 {
     font-size: max(25px, 10vmin);
-    background: rgb(255, 255, 255);
-    background-clip: text;
-    color: transparent;
+    background: #ffffff;
     margin: 20px;
 }
 
