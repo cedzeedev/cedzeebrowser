@@ -36,3 +36,5 @@ history.csv
 
 # __pycache__
 __pycache__/
+# browser_data
+browser_data/
