@@ -5,3 +5,5 @@
 - [ ] favoris ( fedian )
 - [ ] extension ( antoine )
 - [ ] redesign (Léo)
+- [ ] paramètres
+- [ ] page de bienvenue pour premier démarrage 
