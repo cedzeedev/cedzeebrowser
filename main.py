@@ -128,7 +128,7 @@ class BrowserWindow(QMainWindow):
 
 
     def add_navigation_buttons(self):
-        toggle_sidebar_btn = QAction(QIcon(f"{directory}resources/icons/menu.png"), "", self)
+        toggle_sidebar_btn = QAction(QIcon(f"{directory}/resources/icons/menu.png"), "", self)
         toggle_sidebar_btn.setToolTip("Toggle Sidebar")
         toggle_sidebar_btn.triggered.connect(self.toggle_sidebar)
         self.menu.addAction(toggle_sidebar_btn)
@@ -157,7 +157,7 @@ class BrowserWindow(QMainWindow):
         self.address_input.returnPressed.connect(self.navigate_to_url)
         self.menu.addWidget(self.address_input)
 
-        new_tab_btn = QAction(QIcon(f"{directory}/icons/add.png"), "", self)
+        new_tab_btn = QAction(QIcon(f"{directory}/resources/icons/add.png"), "", self)
         new_tab_btn.setToolTip("New Tab")
         new_tab_btn.triggered.connect(self.open_new_tab)
         self.menu.addAction(new_tab_btn)
