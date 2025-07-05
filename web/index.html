@@ -16,52 +16,54 @@
     </div>
 
     <h1>CEDZEE</h1>
+
     <form id="searchForm">
         <input type="text" id="searchQuery" placeholder="Rechercher..." autofocus />
         <input type="submit" id="searchSubmit" value="🔎" />
     </form>
+
     <a class="cedzee-button-contributors" href="https://cedzee-browser-contributors.vercel.app/">Contributeurs</a>
 
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
+
         new QWebChannel(qt.webChannelTransport, function (channel) {
+
             window.cedzeebrowser = channel.objects.cedzeebrowser;
 
             cedzeebrowser.get('searchEngine', function (searchEngine) {
-                const searchInput = document.getElementById('searchQuery');
-                if (searchEngine) {
-                    searchInput.placeholder = `Rechercher avec ${searchEngine}...`;
-                } else {
-                    searchInput.placeholder = 'Rechercher...';
-                }
 
-                let searchurl = "https://www.google.com/search?q=";
-                if (searchEngine === "Qwant Junior") {
-                    searchurl = "https://www.qwantjunior.com/?q=";
-                } else if (searchEngine === "Ecosia") {
-                    searchurl = "https://www.ecosia.org/search?q=";
-                } else if (searchEngine === "Bing") {
-                    searchurl = "https://www.bing.com/search?q=";
-                } else if (searchEngine === "DuckDuckGo") {
-                    searchurl = "https://duckduckgo.com/?q=";
-                } else if (searchEngine === "Yahoo") {
-                    searchurl = "https://search.yahoo.com/search?p=";
-                } else if (searchEngine === "Startpage") {
-                    searchurl = "https://www.startpage.com/do/search?query=";
-                } else if (searchEngine === "Brave Search") {
-                    searchurl = "https://search.brave.com/search?q=";
-                }
+                searchEngine = searchEngine ?? "Google";
+                const searchInput = document.getElementById('searchQuery');
+
+                searchInput.placeholder = searchEngine ? `Rechercher avec ${searchEngine}...` : 'Rechercher...';
+
+                const searchURL = {
+
+                    "Qwant Junior": "https://www.qwantjunior.com/?q=",
+                    "Ecosia": "https://www.ecosia.org/search?q=",
+                    "Bing": "https://www.bing.com/search?q=",
+                    "DuckDuckGo": "https://duckduckgo.com/?q=",
+                    "Yahoo": "https://search.yahoo.com/search?p=",
+                    "Startpage": "https://www.startpage.com/do/search?query=",
+                    "Brave Search": "https://search.brave.com/search?q="
+                
+                }[searchEngine] ?? "https://www.google.com/search?q=";
 
                 document.getElementById("searchForm").addEventListener("submit", function (event) {
+    
                     event.preventDefault();
                     const search = searchInput.value;
                     const link = `${searchurl}${encodeURIComponent(search)}`;
                     window.location.href = link;
+
                 });
+
             });
+
         });
+
     </script>
 
 </body>
-
 </html>
