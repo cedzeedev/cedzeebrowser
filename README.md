@@ -1,5 +1,5 @@
 
-# CEDZEE Search
+# CEDZEE Browser
 
 ## Powerful browser
 
@@ -17,6 +17,10 @@ cd cedzeebrowser
 pip install -r requirements.txt
 python ./main.py
 ```
+
+# For developers 
+
+If you wish to contribute to the project, I recommend focusing on the features outlined in the [TODO.md](https://github.com/slohwnix/cedzee-browser/blob/main/TODO.md).
 
 ## Organization
 
