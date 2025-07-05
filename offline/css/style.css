@@ -19,14 +19,17 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background: #0E1117;
+    background: rgb(69, 69, 69);
 }
 
 canvas {
     background-color: #000000;
 }
 
-h1, p, span, a {
+h1,
+p,
+span,
+a {
     color: #ffffff;
 }
 

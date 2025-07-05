@@ -5,9 +5,10 @@ try:
     import requests
     import csv
     import json
+    from bridge import CedzeeBridge
     from datetime import datetime
-
-    from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve
+    from PyQt6.QtWebChannel import QWebChannel
+    from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot
     from PyQt6.QtGui import QAction, QIcon
     from PyQt6.QtWebEngineWidgets import QWebEngineView
     from PyQt6.QtWebEngineCore import (
@@ -43,6 +44,18 @@ except (ImportError, ImportWarning) as err:
     exit(1)
 
 
+
+os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
+    "--enable-gpu "
+    "--enable-webgl "
+    "--enable-accelerated-2d-canvas "
+    "--ignore-gpu-blocklist "
+    "--enable-zero-copy "
+    "--disable-software-rasterizer "
+    "--use-gl=angle "
+    "--enable-native-gpu-memory-buffers"
+)
+
 # PyQt application setup
 application = QApplication.instance()
 directory = os.path.dirname(os.path.abspath(__file__))
@@ -56,10 +69,30 @@ history_page_url = os.path.abspath(f"{directory}/web/history.html")
 update_page_url = os.path.abspath(f"{directory}/web/update.html")
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
 game_url = os.path.abspath(f"{directory}/offline/game.html")
+welcome_url = os.path.abspath(f"{directory}/web/welcome.html")
+CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
 
 version_json_url = (
     "https://raw.githubusercontent.com/cedzeedev/cedzeebrowser/refs/heads/main/version.json"
 )
+
+# verify if it's the first run
+def check_first_run():
+    if not os.path.exists(CONFIG_FILE):
+        config = {"first_run": True}
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(config, f, indent=4)
+        return True
+    else:
+        with open(CONFIG_FILE, "r") as f:
+            config = json.load(f)
+        if config.get("first_run", True):
+            config["first_run"] = False
+            with open(CONFIG_FILE, "w") as f:
+                json.dump(config, f, indent=4)
+            return True
+        else:
+            return False
 
 # Load local version information
 version_file_pth = f"{directory}/version.json"
@@ -120,7 +153,9 @@ class CustomWebEnginePage(QWebEnginePage):
                 "home": home_url,
                 "history": history_page_url,
                 "update": update_page_url,
-                "openpoke": offline_url,
+                "offline": offline_url,
+                "game": game_url,
+                "welcome": welcome_url,
             }
             real_path = mapping.get(target)
             if real_path:
@@ -268,16 +303,30 @@ class BrowserWindow(QMainWindow):
                 self.current_browser().setUrl(QUrl.fromLocalFile(offline_url))
 
     def toggle_sidebar(self):
-        start = 0 if self.sidebar.maximumWidth() else self.original_sidebar_width
-        end = self.original_sidebar_width if start == 0 else 0
-        self.sidebar_animation.setStartValue(start)
-        self.sidebar_animation.setEndValue(end)
+        current_width = self.sidebar.maximumWidth()
+        if current_width == 0:
+            self.sidebar_animation.setStartValue(0)
+            self.sidebar_animation.setEndValue(self.original_sidebar_width)
+        else:
+            self.sidebar_animation.setStartValue(current_width)
+            self.sidebar_animation.setEndValue(0)
         self.sidebar_animation.start()
+
+    def _attach_webchannel(self, browser: QWebEngineView):
+        channel = QWebChannel(self)
+        bridge = CedzeeBridge(self)
+        channel.registerObject("cedzeebrowser", bridge)
+        browser.page().setWebChannel(channel)
+        # optionel
+        bridge.settingChanged.connect(
+            lambda k, v: print(f"Setting '{k}' mis à jour en '{v}'")
+        )
 
     def add_homepage_tab(self):
         browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, browser, browser_window=self)
         browser.setPage(page)
+        self._attach_webchannel(browser)
         browser.setUrl(QUrl.fromLocalFile(home_url))
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
         browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
@@ -292,6 +341,7 @@ class BrowserWindow(QMainWindow):
         browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, browser, browser_window=self)
         browser.setPage(page)
+        self._attach_webchannel(browser)
         browser.setUrl(QUrl.fromLocalFile(home_url))
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
         browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
@@ -303,10 +353,26 @@ class BrowserWindow(QMainWindow):
         self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
         return browser
 
+    def open_welcome_tab(self):
+        browser = QWebEngineView()
+        page = CustomWebEnginePage(self.profile, browser, browser_window=self)
+        browser.setPage(page)
+        self._attach_webchannel(browser)
+        browser.setUrl(QUrl.fromLocalFile(welcome_url))
+        browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
+        browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
+        browser.page().javaScriptConsoleMessage = self.handle_js_error
+
+        self.stacked_widget.addWidget(browser)
+        self.sidebar.addItem(QListWidgetItem("Bienvenue"))
+        self.stacked_widget.setCurrentWidget(browser)
+        self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
+
     def open_update_tab(self):
         browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, browser, browser_window=self)
         browser.setPage(page)
+        self._attach_webchannel(browser)
         browser.setUrl(QUrl.fromLocalFile(update_page_url))
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
         browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
@@ -351,7 +417,8 @@ class BrowserWindow(QMainWindow):
             "cedzee://history": history_page_url,
             "cedzee://update": update_page_url,
             "cedzee://offline": offline_url,
-            "cedzee://game": game_url
+            "cedzee://game": game_url,
+            "cedzee://welcome": welcome_url,
         }
 
         if text in cedzee_routes:
@@ -412,6 +479,7 @@ class BrowserWindow(QMainWindow):
         normalized_update = QUrl.fromLocalFile(update_page_url).toString()
         normalized_offline = QUrl.fromLocalFile(offline_url).toString()
         normalized_game = QUrl.fromLocalFile(game_url).toString()
+        normalized_welcome = QUrl.fromLocalFile(welcome_url).toString()
 
         if local == normalized_home:
             disp = "cedzee://home"
@@ -423,6 +491,8 @@ class BrowserWindow(QMainWindow):
             disp = "cedzee://offline"
         elif local == normalized_game:
             disp = "cedzee://game"
+        elif local == normalized_welcome:
+            disp = "cedzee://welcome"
         else:
             disp = url.toString()
 
@@ -466,6 +536,9 @@ class BrowserWindow(QMainWindow):
 if __name__ == "__main__":
     window = BrowserWindow()
     window.show()
+    if check_first_run():
+        window.open_welcome_tab()
+
     if update_available:
         window.open_update_tab()
     application.exec()

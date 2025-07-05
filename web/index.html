@@ -11,8 +11,8 @@
 <body>
 
     <div class="items">
-        <a href="https://mail.google.com" target="https://mail.google.com" rel="noopener noreferrer">Gmail</a>
-        <a href="https://www.youtube.com" target="https://www.youtube.com" rel="noopener noreferrer">Youtube</a>
+        <a href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail</a>
+        <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer">Youtube</a>
     </div>
 
     <h1>CEDZEE</h1>
@@ -22,7 +22,46 @@
     </form>
     <a class="cedzee-button-contributors" href="https://cedzee-browser-contributors.vercel.app/">Contributeurs</a>
 
-    <script src="./logic.js"></script>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            window.cedzeebrowser = channel.objects.cedzeebrowser;
+
+            cedzeebrowser.get('searchEngine', function (searchEngine) {
+                const searchInput = document.getElementById('searchQuery');
+                if (searchEngine) {
+                    searchInput.placeholder = `Rechercher avec ${searchEngine}...`;
+                } else {
+                    searchInput.placeholder = 'Rechercher...';
+                }
+
+                let searchurl = "https://www.google.com/search?q=";
+                if (searchEngine === "Qwant Junior") {
+                    searchurl = "https://www.qwantjunior.com/?q=";
+                } else if (searchEngine === "Ecosia") {
+                    searchurl = "https://www.ecosia.org/search?q=";
+                } else if (searchEngine === "Bing") {
+                    searchurl = "https://www.bing.com/search?q=";
+                } else if (searchEngine === "DuckDuckGo") {
+                    searchurl = "https://duckduckgo.com/?q=";
+                } else if (searchEngine === "Yahoo") {
+                    searchurl = "https://search.yahoo.com/search?p=";
+                } else if (searchEngine === "Startpage") {
+                    searchurl = "https://www.startpage.com/do/search?query=";
+                } else if (searchEngine === "Brave Search") {
+                    searchurl = "https://search.brave.com/search?q=";
+                }
+
+                document.getElementById("searchForm").addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    const search = searchInput.value;
+                    const link = `${searchurl}${encodeURIComponent(search)}`;
+                    window.location.href = link;
+                });
+            });
+        });
+    </script>
+
 </body>
 
 </html>

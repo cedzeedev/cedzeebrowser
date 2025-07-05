@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../theme/theme.css" />
+    <title>Bienvenue</title>
+    <style>
+        h2 {
+            color: white;
+            margin: 10px;
+            text-align: center;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 5px 0;
+        }
+
+        label {
+            cursor: pointer;
+        }
+
+        #nextBtn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #nextBtn:disabled {
+            background-color: grey;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Bienvenue</h1>
+    <h2>Bienvenue sur cedzee browser</h2>
+
+    <p class="texte">Pour commencer, sélectionnez votre moteur de recherche :</p>
+
+    <ul>
+        <li><label><input type="radio" name="searchEngine" value="Google"> Google</label></li>
+        <li><label><input type="radio" name="searchEngine" value="Qwant Junior"> Qwant Junior</label></li>
+        <li><label><input type="radio" name="searchEngine" value="Ecosia"> Ecosia</label></li>
+        <li><label><input type="radio" name="searchEngine" value="Bing"> Bing</label></li>
+        <li><label><input type="radio" name="searchEngine" value="DuckDuckGo"> DuckDuckGo</label></li>
+        <li><label><input type="radio" name="searchEngine" value="Yahoo"> Yahoo</label></li>
+        <li><label><input type="radio" name="searchEngine" value="Startpage"> Startpage</label></li>
+        <li><label><input type="radio" name="searchEngine" value="Brave Search"> Brave Search</label></li>
+    </ul>
+
+    <button id="nextBtn" disabled>Suivant</button>
+
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            new QWebChannel(qt.webChannelTransport, function (channel) {
+                window.cedzeebrowser = channel.objects.cedzeebrowser;
+
+                const radios = document.querySelectorAll('input[name="searchEngine"]');
+                const nextBtn = document.getElementById('nextBtn');
+                let selectedEngine = null;
+                radios.forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        selectedEngine = radio.value;
+                        nextBtn.disabled = false;
+                    });
+                });
+                nextBtn.addEventListener('click', () => {
+                    if (!selectedEngine) return;
+                    cedzeebrowser.set('searchEngine', selectedEngine);
+                    window.location.href = 'index.html';
+                });
+                cedzeebrowser.get('searchEngine', function (current) {
+                    if (!current) return;
+                    radios.forEach(radio => {
+                        if (radio.value === current) {
+                            radio.checked = true;
+                            selectedEngine = current;
+                            nextBtn.disabled = false;
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
+
+</body>
+
+</html>
