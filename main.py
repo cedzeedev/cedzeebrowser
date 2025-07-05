@@ -368,6 +368,24 @@ class BrowserWindow(QMainWindow):
         self.stacked_widget.setCurrentWidget(browser)
         self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
 
+    def open_tab(self, url_toload: str):
+        try: # j'ai mit un try/except car si le fichier n'existe pas, il y a une erreur et tout crash - Message de slohwnix
+            browser = QWebEngineView()
+            page = CustomWebEnginePage(self.profile, browser, browser_window=self)
+            browser.setPage(page)
+            self._attach_webchannel(browser)
+            browser.setUrl(QUrl.fromLocalFile(url_toload))
+            browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
+            browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
+            browser.page().javaScriptConsoleMessage = self.handle_js_error
+
+            self.stacked_widget.addWidget(browser)
+            self.sidebar.addItem(QListWidgetItem("Chargement..."))
+            self.stacked_widget.setCurrentWidget(browser)
+            self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
+        except Exception as e:
+            print(f"Erreur lors de l'ouverture de l'onglet : {e}", file=sys.stderr)
+
     def open_update_tab(self):
         browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, browser, browser_window=self)
@@ -466,8 +484,8 @@ class BrowserWindow(QMainWindow):
             self.history_index = -1
 
     def open_history(self):
-        if self.current_browser():
-            self.current_browser().setUrl(QUrl.fromLocalFile(history_page_url))
+        self.open_tab(history_page_url)
+
 
     def update_urlbar(self, url: QUrl, browser_instance=None):
         if browser_instance != self.current_browser():
