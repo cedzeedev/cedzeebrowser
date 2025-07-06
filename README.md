@@ -20,7 +20,7 @@ python ./main.py
 
 # For developers 
 
-If you wish to contribute to the project, I recommend focusing on the features outlined in the [TODO.md](https://github.com/slohwnix/cedzee-browser/blob/main/TODO.md).
+If you wish to contribute to the project, I recommend focusing on the features outlined in the [TODO.md](TODO.md).
 
 ## Organization
 
@@ -66,7 +66,7 @@ Contributions are most welcome by forking the repository and sending a pull requ
 
 **Contributors :**
 
-![contributors](https://contrib.rocks/image?repo=cedzeedev/cedzeebrowser)
+[![contributors](https://contrib.rocks/image?repo=cedzeedev/cedzeebrowser)](https://cedzee-browser-contributors.vercel.app/)
 
 >
 > Fait avec le ❤️ par la communauté !
