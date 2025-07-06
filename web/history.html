@@ -68,13 +68,12 @@
     </style>
 </head>
 
-<body>
+<body class="dark-mode">
     <h1>Historique de navigation</h1>
     <button id="theme-toggle">Changer de thème</button>
     <ul id="history-list"></ul>
 
     <script>
-        // Load history
         fetch('../resources/config/history.csv')
             .then(response => response.text())
             .then(data => {
@@ -89,36 +88,26 @@
                     link.textContent = url;
                     link.target = "_blank";
 
-                    link.addEventListener("click", () => {
-                        window.location.href = link;
-                    })
-
                     listItem.appendChild(link);
                     list.appendChild(listItem);
                 });
             })
             .catch(error => console.error('Erreur chargement historique:', error));
 
-        // Theme toggle
         const themeToggle = document.getElementById('theme-toggle');
         const body = document.body;
 
         themeToggle.addEventListener('click', () => {
             body.classList.toggle('dark-mode');
-            if (body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-            } else {
-                localStorage.setItem('theme', 'light');
-            }
+            const newTheme = body.classList.contains('dark-mode') ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
         });
 
-        // Check for saved theme preference
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            body.classList.add('dark-mode');
+        if (savedTheme === 'light') {
+            body.classList.remove('dark-mode');
         }
     </script>
-
 </body>
 
 </html>

@@ -1,6 +1,8 @@
 import json
+import requests
 import os
-from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal
+import base64
+from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QVariant
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "resources", "config.json")
 
@@ -32,6 +34,57 @@ class CedzeeBridge(QObject):
     def get(self, key: str) -> str:
         return self._config.get(key, "")
 
+    @pyqtSlot(str, "QVariantMap", result="QVariantMap")
+    def fetchUrl(self, url: str, init: dict) -> dict:
+        method = init.get('method', 'GET').upper()
+        headers = init.get('headers', {}) or {}
+        body = init.get('body', None)
+        timeout = init.get('timeout', 10)
+
+        try:
+            response = requests.request(
+                method,
+                url,
+                headers=headers,
+                data=body,
+                timeout=timeout,
+                stream=True
+            )
+            status = response.status_code
+            status_text = response.reason
+            resp_headers = dict(response.headers)
+
+            content_type = response.headers.get('Content-Type', '')
+            # Gestion des images : renvoyer en base64
+            if content_type.startswith('image/'):
+                data = response.content
+                b64 = base64.b64encode(data).decode('utf-8')
+                data_url = f"data:{content_type};base64,{b64}"
+                resp_body = data_url
+            elif 'application/json' in content_type:
+                try:
+                    resp_body = response.json()
+                except ValueError:
+                    resp_body = response.text
+            else:
+                resp_body = response.text
+
+            return {
+                'status': status,
+                'statusText': status_text,
+                'headers': resp_headers,
+                'body': resp_body
+            }
+        except requests.exceptions.RequestException as e:
+            err = str(e)
+            code = None
+            if hasattr(e, 'response') and e.response is not None:
+                code = e.response.status_code
+            return {
+                'error': err,
+                'status': code
+            }
+
     @pyqtSlot(result='QVariantMap')
-    def getAll(self):
+    def getAll(self) -> dict:
         return self._config
