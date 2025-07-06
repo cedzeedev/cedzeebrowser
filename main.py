@@ -1,48 +1,52 @@
-# imports
+import os
+import sys
+import csv
+import json
+from datetime import datetime
 try:
-    import os
-    import sys
     import requests
-    import csv
-    import json
+except ImportError:
+    print("Warning: 'requests' library not found. Online version check might be unavailable.")
+    class DummyRequests:
+        def get(self, url, timeout=None):
+            raise Exception("requests library not installed.")
+    requests = DummyRequests()
+try:
     from bridge import CedzeeBridge
-    from datetime import datetime
-    from PyQt6.QtWebChannel import QWebChannel
-    from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot
-    from PyQt6.QtGui import QAction, QIcon
-    from PyQt6.QtWebEngineWidgets import QWebEngineView
-    from PyQt6.QtWebEngineCore import (
-        QWebEngineProfile,
-        QWebEnginePage,
-        QWebEngineDownloadRequest,
-    )
-    from PyQt6.QtWidgets import (
-        QApplication,
-        QLineEdit,
-        QMainWindow,
-        QMenu,
-        QToolBar,
-        QWidget,
-        QHBoxLayout,
-        QStackedWidget,
-        QListWidget,
-        QListWidgetItem,
-        QFileDialog,
-    )
-except (ImportError, ImportWarning) as err:
-    print(f"Import error : {err}")
-    Exit_orNot = input("Voulez vous installer les dependances manquantes ? (O/N) : ")
-    if Exit_orNot.lower() == "o":
-        try:
-            import subprocess
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
-            print("Dépendances installées avec succès.")
-        except Exception as e:
-            print(f"Erreur lors de l'installation des dépendances : {e}")
-    else:
-        print("Sortie du programme.")
-    exit(1)
+except ImportError:
+    print("Warning: bridge.py not found. Some functionalities might be unavailable.")
+    class CedzeeBridge(object):
+        def __init__(self, parent=None):
+            super().__init__()
+        from PyQt6.QtCore import pyqtSignal
+        settingChanged = pyqtSignal(str, object)
 
+
+from PyQt6.QtWebChannel import QWebChannel
+from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot
+from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtWebEngineWidgets import QWebEngineView
+from PyQt6.QtWebEngineCore import (
+    QWebEngineProfile,
+    QWebEnginePage,
+    QWebEngineDownloadRequest,
+    QWebEngineCertificateError, 
+    QWebEngineUrlRequestInterceptor, 
+    QWebEngineUrlRequestInfo 
+)
+from PyQt6.QtWidgets import (
+    QApplication,
+    QLineEdit,
+    QMainWindow,
+    QMenu,
+    QToolBar,
+    QWidget,
+    QHBoxLayout,
+    QStackedWidget,
+    QListWidget,
+    QListWidgetItem,
+    QFileDialog,
+)
 
 
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
@@ -70,6 +74,8 @@ update_page_url = os.path.abspath(f"{directory}/web/update.html")
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
 game_url = os.path.abspath(f"{directory}/offline/game.html")
 welcome_url = os.path.abspath(f"{directory}/web/welcome.html")
+contributors_url = os.path.abspath(f"{directory}/web/contributors.html") # Added for consistency
+favorites_url = os.path.abspath(f"{directory}/web/favorites.html") # Added for consistency
 CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
 
 version_json_url = (
@@ -99,7 +105,7 @@ version_file_pth = f"{directory}/version.json"
 try:
     with open(version_file_pth, "r", encoding="utf-8") as file:
         data = json.load(file)
-        version = data[0].get("version", "inconnue")
+    version = data[0].get("version", "inconnue")
 except Exception as e:
     print(f"Erreur lors du chargement de la version : {e}")
     version = "inconnue"
@@ -130,10 +136,18 @@ if version_online != "error" and version != version_online and version < version
         pass
 
 
+class NetworkRequestLogger(QWebEngineUrlRequestInterceptor):
+    def interceptRequest(self, info: QWebEngineUrlRequestInfo):
+        url = info.requestUrl().toString()
+        method = info.requestMethod().data().decode('utf-8')
+        resource_type = info.resourceType()
+        print(f"[Network] {method} {url} (Type: {resource_type.name})")
+
 # web browser
 class CustomWebEnginePage(QWebEnginePage):
     """
     Intercepte les clics sur `cedzee://…` pour rediriger vers le fichier local.
+    Gère également les erreurs de certificat TLS/SSL.
     """
 
     def __init__(self, profile, parent=None, browser_window=None):
@@ -142,7 +156,7 @@ class CustomWebEnginePage(QWebEnginePage):
 
     def createWindow(self, _type):
         if self.browser_window:
-            new_browser = self.browser_window.open_new_tab()
+            new_browser = self.browser_window.open_tab(url_to_load=QUrl())
             return new_browser.page()
         return super().createWindow(_type)
 
@@ -156,12 +170,19 @@ class CustomWebEnginePage(QWebEnginePage):
                 "offline": offline_url,
                 "game": game_url,
                 "welcome": welcome_url,
+                "contributors": contributors_url,
+                "favorites": favorites_url,
             }
             real_path = mapping.get(target)
             if real_path:
-                self.browser_window.current_browser().setUrl(QUrl.fromLocalFile(real_path))
+                if self.browser_window and self.browser_window.current_browser():
+                    self.browser_window.current_browser().setUrl(QUrl.fromLocalFile(real_path))
             return False
         return super().acceptNavigationRequest(url, nav_type, isMainFrame)
+
+    def certificateError(self, certificate_error: QWebEngineCertificateError):
+        print(f"Erreur de certificat détectée pour {certificate_error.url().toString()}: {certificate_error.errorDescription()}", file=sys.stderr)
+        return True 
 
 
 class BrowserWindow(QMainWindow):
@@ -169,18 +190,18 @@ class BrowserWindow(QMainWindow):
         super().__init__()
         self.ensure_history_file()
 
-        # window properties
+        # Window properties
         self.setWindowTitle("CEDZEE Browser")
         self.resize(1200, 800)
         self.move(300, 50)
 
-        # main widget
+        # Main widget and layout
         self.main_widget = QWidget()
         self.setCentralWidget(self.main_widget)
         self.main_layout = QHBoxLayout(self.main_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
 
-        # SIDEBAR
+        # Sidebar
         self.sidebar = QListWidget()
         self.sidebar.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.sidebar.model().rowsMoved.connect(self.on_sidebar_rows_moved)
@@ -194,26 +215,26 @@ class BrowserWindow(QMainWindow):
         self.sidebar_animation.setDuration(200)
         self.sidebar_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
 
-        # zone des onglets
+        # Tab area
         self.stacked_widget = QStackedWidget()
         self.main_layout.addWidget(self.stacked_widget)
 
-        # menu
+        # Menu toolbar
         self.menu = QToolBar("Menu de navigation")
         self.addToolBar(self.menu)
         self.add_navigation_buttons()
 
-        # context menu du sidebar
+        # Context menu for sidebar tabs
         self.sidebar.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.sidebar.customContextMenuRequested.connect(self.show_tab_context_menu)
 
-        # raccourcis
+        # Keyboard shortcuts
         self._setup_shortcuts()
 
-        # historique
+        # History management
         self.load_history()
 
-        # profil WebEngine
+        # WebEngine profile setup
         profile_path = f"{directory}/browser_data"
         self.profile = QWebEngineProfile("Default", self)
         self.profile.setPersistentStoragePath(profile_path)
@@ -223,14 +244,14 @@ class BrowserWindow(QMainWindow):
         )
         self.profile.downloadRequested.connect(self.on_downloadRequested)
 
-        # thème
+        self.request_logger = NetworkRequestLogger()
+        self.profile.setUrlRequestInterceptor(self.request_logger)
         try:
             with open(os.path.abspath(f"{directory}/theme/theme.css"), "r") as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
             print("theme.css not found.")
 
-        # onglet d'accueil
         self.add_homepage_tab()
 
     def _setup_shortcuts(self):
@@ -261,6 +282,11 @@ class BrowserWindow(QMainWindow):
             self.update_urlbar(b.url(), b)
 
     def add_navigation_buttons(self):
+        self.fav_dir = os.path.join(directory, "resources", "saves")
+        self.fav_file = os.path.join(self.fav_dir, "favorites.json")
+        self.fav_icon_add = QIcon(f"{directory}/resources/icons/favorite_add.png")
+        self.fav_icon_remove = QIcon(f"{directory}/resources/icons/favorite_remove.png")
+
         icons = {
             "menu": "menu.png",
             "back": "arrow_back.png",
@@ -270,37 +296,102 @@ class BrowserWindow(QMainWindow):
             "add": "add.png",
             "dev": "dev.png",
             "history": "history.png",
+            "favorites1": "favorites.png",
         }
-        actions = [
+
+        # Left icons
+        for name, fn in [
             ("menu", self.toggle_sidebar),
             ("back", lambda: self.current_browser().back()),
             ("forward", lambda: self.current_browser().forward()),
             ("refresh", lambda: self.current_browser().reload()),
             ("home", self.go_home),
-        ]
-        for name, fn in actions:
+            ("favorites1", self.open_favorites),
+        ]:
             btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
             btn.setToolTip(name.capitalize())
             btn.triggered.connect(fn)
             self.menu.addAction(btn)
 
+        # URL bar
         self.address_input = QLineEdit()
         self.address_input.returnPressed.connect(self.navigate_to_url)
         self.menu.addWidget(self.address_input)
 
-        for name, fn in [("add", self.open_new_tab), ("dev", self.open_devtools), ("history", self.open_history)]:
+        # Right icons
+        for name, fn in [
+            ("add", self.open_new_tab),
+            ("dev", self.open_devtools),
+            ("history", self.open_history),
+        ]:
             btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
             btn.setToolTip(name.capitalize())
             btn.triggered.connect(fn)
             self.menu.addAction(btn)
 
+
+        self.favorite_action = QAction(self.fav_icon_add, "Ajouter aux favoris", self)
+        self.favorite_action.setToolTip("Ajouter aux favoris")
+        self.favorite_action.triggered.connect(self.toggle_favorite)
+        self.menu.addAction(self.favorite_action)
+
+
+    def toggle_favorite(self):
+        browser = self.current_browser()
+        if not browser:
+            return
+
+        url = browser.url().toString()
+        title = browser.title()
+        os.makedirs(self.fav_dir, exist_ok=True)
+
+        try:
+            with open(self.fav_file, "r", encoding="utf-8") as f:
+                favs = json.load(f)
+            if not isinstance(favs, list):
+                favs = []
+        except (FileNotFoundError, json.JSONDecodeError):
+            favs = []
+
+        existing = next((item for item in favs if item.get("url") == url), None)
+        if existing:
+            favs.remove(existing)
+            print(f"URL removed from favorites: {url}")
+        else:
+            favs.append({"url": url, "title": title})
+            print(f"URL added to favorites: {url}")
+
+        with open(self.fav_file, "w", encoding="utf-8") as f:
+            json.dump(favs, f, indent=4, ensure_ascii=False)
+
+        self.update_favorite_icon(url, favs)
+
+    def update_favorite_icon(self, url=None, favs=None):
+        if url is None or favs is None:
+            browser = self.current_browser()
+            if not browser:
+                return
+            url = browser.url().toString()
+            try:
+                with open(self.fav_file, "r", encoding="utf-8") as f:
+                    favs = json.load(f)
+                if not isinstance(favs, list):
+                    favs = []
+            except (FileNotFoundError, json.JSONDecodeError):
+                favs = []
+
+        is_fav = any(item.get("url") == url for item in favs)
+        if is_fav:
+            self.favorite_action.setIcon(self.fav_icon_remove)
+            self.favorite_action.setToolTip("Retirer des favoris")
+        else:
+            self.favorite_action.setIcon(self.fav_icon_add)
+            self.favorite_action.setToolTip("Ajouter aux favoris")
+
     def go_home(self):
         if self.current_browser():
-            try:
-                requests.get("https://google.com", timeout=2).raise_for_status()
-                self.current_browser().setUrl(QUrl.fromLocalFile(home_url))
-            except requests.RequestException:
-                self.current_browser().setUrl(QUrl.fromLocalFile(offline_url))
+            self.current_browser().setUrl(QUrl.fromLocalFile(home_url))
+
 
     def toggle_sidebar(self):
         current_width = self.sidebar.maximumWidth()
@@ -317,36 +408,31 @@ class BrowserWindow(QMainWindow):
         bridge = CedzeeBridge(self)
         channel.registerObject("cedzeebrowser", bridge)
         browser.page().setWebChannel(channel)
-        # optionel
         bridge.settingChanged.connect(
             lambda k, v: print(f"Setting '{k}' mis à jour en '{v}'")
         )
 
-    def add_homepage_tab(self):
+    def _create_and_configure_browser_tab(self, initial_url: QUrl):
         browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, browser, browser_window=self)
         browser.setPage(page)
         self._attach_webchannel(browser)
-        browser.setUrl(QUrl.fromLocalFile(home_url))
+        browser.setUrl(initial_url)
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
         browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
+        browser.loadFinished.connect(lambda ok, b=browser: self.handle_load_finished(ok, b))
         browser.page().javaScriptConsoleMessage = self.handle_js_error
+        return browser
 
+    def add_homepage_tab(self):
+        browser = self._create_and_configure_browser_tab(QUrl.fromLocalFile(home_url))
         self.stacked_widget.addWidget(browser)
         self.sidebar.addItem(QListWidgetItem("Page d'accueil"))
         self.stacked_widget.setCurrentWidget(browser)
         self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
 
     def open_new_tab(self):
-        browser = QWebEngineView()
-        page = CustomWebEnginePage(self.profile, browser, browser_window=self)
-        browser.setPage(page)
-        self._attach_webchannel(browser)
-        browser.setUrl(QUrl.fromLocalFile(home_url))
-        browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
-        browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
-        browser.page().javaScriptConsoleMessage = self.handle_js_error
-
+        browser = self._create_and_configure_browser_tab(QUrl.fromLocalFile(home_url))
         self.stacked_widget.addWidget(browser)
         self.sidebar.addItem(QListWidgetItem("Nouvel onglet"))
         self.stacked_widget.setCurrentWidget(browser)
@@ -354,55 +440,87 @@ class BrowserWindow(QMainWindow):
         return browser
 
     def open_welcome_tab(self):
-        browser = QWebEngineView()
-        page = CustomWebEnginePage(self.profile, browser, browser_window=self)
-        browser.setPage(page)
-        self._attach_webchannel(browser)
-        browser.setUrl(QUrl.fromLocalFile(welcome_url))
-        browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
-        browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
-        browser.page().javaScriptConsoleMessage = self.handle_js_error
-
+        browser = self._create_and_configure_browser_tab(QUrl.fromLocalFile(welcome_url))
         self.stacked_widget.addWidget(browser)
         self.sidebar.addItem(QListWidgetItem("Bienvenue"))
         self.stacked_widget.setCurrentWidget(browser)
         self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
 
-    def open_tab(self, url_toload: str):
-        try: # j'ai mit un try/except car si le fichier n'existe pas, il y a une erreur et tout crash - Message de slohwnix
-            browser = QWebEngineView()
-            page = CustomWebEnginePage(self.profile, browser, browser_window=self)
-            browser.setPage(page)
-            self._attach_webchannel(browser)
-            browser.setUrl(QUrl.fromLocalFile(url_toload))
-            browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
-            browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
-            browser.page().javaScriptConsoleMessage = self.handle_js_error
+    def open_tab(self, url_to_load: QUrl):
+        if isinstance(url_to_load, str):
+            if url_to_load.startswith("cedzee://"):
+                target = url_to_load.replace("cedzee://", "")
+                mapping = {
+                    "home": home_url,
+                    "history": history_page_url,
+                    "update": update_page_url,
+                    "offline": offline_url,
+                    "game": game_url,
+                    "welcome": welcome_url,
+                    "contributors": contributors_url,
+                    "favorites": favorites_url,
+                }
+                file_path = mapping.get(target)
+                if file_path:
+                    url_to_load_obj = QUrl.fromLocalFile(file_path)
+                else:
+                    print(f"Unknown cedzee:// path: {url_to_load}. Loading home.", file=sys.stderr)
+                    url_to_load_obj = QUrl.fromLocalFile(home_url)
+            else:
+                url_to_load_obj = QUrl(url_to_load)
+                if url_to_load_obj.scheme() == "":
+                    url_to_load_obj.setScheme("http")
+        elif isinstance(url_to_load, QUrl):
+            url_to_load_obj = url_to_load
+        else:
+            print(f"Invalid URL type for open_tab: {type(url_to_load)}. Expected str or QUrl.", file=sys.stderr)
+            return None
 
-            self.stacked_widget.addWidget(browser)
-            self.sidebar.addItem(QListWidgetItem("Chargement..."))
-            self.stacked_widget.setCurrentWidget(browser)
-            self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
-        except Exception as e:
-            print(f"Erreur lors de l'ouverture de l'onglet : {e}", file=sys.stderr)
+        if not url_to_load_obj.isValid():
+            print(f"Invalid URL provided: {url_to_load_obj.toString()}. Loading offline page.", file=sys.stderr)
+            url_to_load_obj = QUrl.fromLocalFile(offline_url)
+
+        browser = self._create_and_configure_browser_tab(url_to_load_obj)
+        self.stacked_widget.addWidget(browser)
+        self.sidebar.addItem(QListWidgetItem("Chargement..."))
+        self.stacked_widget.setCurrentWidget(browser)
+        self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
+        return browser
 
     def open_update_tab(self):
-        browser = QWebEngineView()
-        page = CustomWebEnginePage(self.profile, browser, browser_window=self)
-        browser.setPage(page)
-        self._attach_webchannel(browser)
-        browser.setUrl(QUrl.fromLocalFile(update_page_url))
-        browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
-        browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
-        browser.page().javaScriptConsoleMessage = self.handle_js_error
-
+        browser = self._create_and_configure_browser_tab(QUrl.fromLocalFile(update_page_url))
         self.stacked_widget.addWidget(browser)
         self.sidebar.addItem(QListWidgetItem("Mise à jour disponible"))
         self.stacked_widget.setCurrentWidget(browser)
         self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
 
-    def handle_js_error(self, message, line, sourceID, errorMsg):
-        print(f"JS Error : {message} line {line} in {sourceID}: {errorMsg}", file=sys.stderr)
+    def handle_js_error(self, message_level, message, line, sourceID):
+        if "Unrecognized feature: 'ch-ua-form-factors'." in message:
+            return
+        if "Document-Policy HTTP header: Unrecognized document policy feature name" in message:
+            return
+        if "Deprecated API for given entry type." in message:
+            return
+        if "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing." in message:
+            return
+        if "Unrecognized feature: 'attribution-reporting'." in message: # Also common for Google services
+            return
+
+        level_map = {
+            QWebEnginePage.JavaScriptConsoleMessageLevel.InfoMessageLevel: "INFO",
+            QWebEnginePage.JavaScriptConsoleMessageLevel.WarningMessageLevel: "WARNING",
+            QWebEnginePage.JavaScriptConsoleMessageLevel.ErrorMessageLevel: "ERROR",
+        }
+        level_name = level_map.get(message_level, "UNKNOWN_LEVEL")
+        print(f"JS Console ({level_name}) : {message} (Ligne: {line}, Source: {sourceID})", file=sys.stderr)
+
+    def handle_load_finished(self, ok: bool, browser_instance: QWebEngineView):
+        if not ok:
+            current_url = browser_instance.url()
+            if not current_url.isLocalFile() and current_url.scheme() in ["http", "https"]:
+                print(f"Échec de chargement pour {current_url.toString()}. Redirection vers la page hors ligne.", file=sys.stderr)
+                browser_instance.setUrl(QUrl.fromLocalFile(offline_url))
+
 
     def open_devtools(self):
         devtools = QWebEngineView()
@@ -427,6 +545,11 @@ class BrowserWindow(QMainWindow):
             self.stacked_widget.removeWidget(w)
             self.sidebar.takeItem(index)
             w.deleteLater()
+            if self.stacked_widget.count() > 0:
+                self.stacked_widget.setCurrentIndex(max(0, index - 1))
+                self.sidebar.setCurrentRow(max(0, index - 1))
+                self.update_urlbar(self.current_browser().url(), self.current_browser())
+
 
     def navigate_to_url(self):
         text = self.address_input.text().strip()
@@ -437,22 +560,22 @@ class BrowserWindow(QMainWindow):
             "cedzee://offline": offline_url,
             "cedzee://game": game_url,
             "cedzee://welcome": welcome_url,
+            "cedzee://contributors": contributors_url,
+            "cedzee://favorites": favorites_url,
         }
 
         if text in cedzee_routes:
-            file_path = cedzee_routes[text]
-            url = QUrl.fromLocalFile(file_path)
+            url_to_load = QUrl.fromLocalFile(cedzee_routes[text])
         else:
-            url = QUrl(text)
-            if url.scheme() == "":
-                url.setScheme("http")
+            url_to_load = QUrl(text)
+            if url_to_load.scheme() == "":
+                url_to_load = QUrl(f"https://{text}")
+                if not url_to_load.isValid():
+                    url_to_load = QUrl(f"http://{text}")
 
         if self.current_browser():
-            try:
-                requests.get("https://google.com", timeout=2).raise_for_status()
-                self.current_browser().setUrl(url)
-            except requests.RequestException:
-                self.current_browser().setUrl(QUrl.fromLocalFile(offline_url))
+            self.current_browser().setUrl(url_to_load)
+
 
     def ensure_history_file(self):
         history_dir = os.path.join(directory, "resources", "config")
@@ -460,7 +583,7 @@ class BrowserWindow(QMainWindow):
             os.makedirs(history_dir)
 
     def save_to_history(self, url_str: str):
-        if url_str.startswith("http://") or url_str.startswith("https://"):
+        if url_str.startswith("http://") or url_str.startswith("https://") or url_str.startswith("cedzee://"):
             history_path = os.path.join(directory, "resources", "config", "history.csv")
             try:
                 with open(history_path, mode="a", newline="", encoding="utf-8") as f:
@@ -484,41 +607,36 @@ class BrowserWindow(QMainWindow):
             self.history_index = -1
 
     def open_history(self):
-        self.open_tab(history_page_url)
+        self.open_tab(QUrl.fromLocalFile(history_page_url))
+
+    def open_favorites(self):
+        self.open_tab(QUrl.fromLocalFile(favorites_url))
 
 
     def update_urlbar(self, url: QUrl, browser_instance=None):
         if browser_instance != self.current_browser():
             return
         self.address_input.blockSignals(True)
-        local = url.toString()
-        normalized_home = QUrl.fromLocalFile(home_url).toString()
-        normalized_history = QUrl.fromLocalFile(history_page_url).toString()
-        normalized_update = QUrl.fromLocalFile(update_page_url).toString()
-        normalized_offline = QUrl.fromLocalFile(offline_url).toString()
-        normalized_game = QUrl.fromLocalFile(game_url).toString()
-        normalized_welcome = QUrl.fromLocalFile(welcome_url).toString()
-
-        if local == normalized_home:
-            disp = "cedzee://home"
-        elif local == normalized_history:
-            disp = "cedzee://history"
-        elif local == normalized_update:
-            disp = "cedzee://update"
-        elif local == normalized_offline:
-            disp = "cedzee://offline"
-        elif local == normalized_game:
-            disp = "cedzee://game"
-        elif local == normalized_welcome:
-            disp = "cedzee://welcome"
-        else:
-            disp = url.toString()
+        local_file_urls = {
+            QUrl.fromLocalFile(home_url).toString(): "cedzee://home",
+            QUrl.fromLocalFile(history_page_url).toString(): "cedzee://history",
+            QUrl.fromLocalFile(update_page_url).toString(): "cedzee://update",
+            QUrl.fromLocalFile(offline_url).toString(): "cedzee://offline",
+            QUrl.fromLocalFile(game_url).toString(): "cedzee://game",
+            QUrl.fromLocalFile(welcome_url).toString(): "cedzee://welcome",
+            QUrl.fromLocalFile(contributors_url).toString(): "cedzee://contributors",
+            QUrl.fromLocalFile(favorites_url).toString(): "cedzee://favorites",
+        }
+        
+        current_url_str = url.toString()
+        disp = local_file_urls.get(current_url_str, current_url_str)
 
         self.address_input.setText(disp)
         self.address_input.setCursorPosition(0)
         self.address_input.blockSignals(False)
 
         self.save_to_history(disp)
+        self.update_favorite_icon(current_url_str)
 
     def show_tab_context_menu(self, pos):
         item = self.sidebar.itemAt(pos)

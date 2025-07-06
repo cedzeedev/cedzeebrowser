@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../theme/theme.css" />
+    <title>Favoris</title>
+    <style>
+        ul {
+            list-style-type: none;
+            padding: 0;
+            color: rgb(255, 255, 255);
+        }
+
+
+        li {
+            margin: 10px 0;
+            color: rgb(255, 255, 255);
+            background: var(--background-li);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px #2d64ca;
+        }
+
+        li:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 6px 12px #2d64ca;
+            margin: 20px 0;
+            padding: 25px;
+        }
+
+        a {
+            text-decoration: none;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Favoris</h1>
+    <ul id="favorites-list"></ul>
+
+    <script>
+        const favoritesPath = "../resources/saves/favorites.json";
+        async function loadFavorites() {
+            try {
+                const response = await fetch(favoritesPath);
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP : ${response.status}`);
+                }
+                const favorites = await response.json();
+
+                const listEl = document.getElementById('favorites-list');
+                listEl.innerHTML = '';
+                favorites.forEach(item => {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = item.url;
+                    a.textContent = item.title;
+                    a.target = '_blank';
+                    li.appendChild(a);
+                    listEl.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Impossible de charger les favoris :', error);
+                const listEl = document.getElementById('favorites-list');
+                listEl.innerHTML = "<li>Vous n'avez pas enregistrer de pages</li>";
+            }
+        }
+
+        // Charger les favoris au chargement de la page
+        window.addEventListener('DOMContentLoaded', loadFavorites);
+    </script>
+</body>
+
+</html>

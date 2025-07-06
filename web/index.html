@@ -12,7 +12,7 @@
 
     <div class="items">
         <a href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail</a>
-        <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer">Youtube</a>
+        <a href="https://youtube.com" target="_blank" rel="noopener noreferrer">YouTube</a>
     </div>
 
     <h1>CEDZEE</h1>
@@ -22,24 +22,20 @@
         <input type="submit" id="searchSubmit" value="🔎" />
     </form>
 
-    <a class="cedzee-button-contributors" href="https://cedzee-browser-contributors.vercel.app/">Contributeurs</a>
+    <a class="cedzee-button-contributors" href="cedzee://contributors">Contributeurs</a>
 
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
-
         new QWebChannel(qt.webChannelTransport, function (channel) {
-
             window.cedzeebrowser = channel.objects.cedzeebrowser;
 
             cedzeebrowser.get('searchEngine', function (searchEngine) {
-
                 searchEngine = searchEngine ?? "Google";
                 const searchInput = document.getElementById('searchQuery');
 
-                searchInput.placeholder = searchEngine ? `Rechercher avec ${searchEngine}...` : 'Rechercher...';
+                searchInput.placeholder = `Rechercher avec ${searchEngine}...`;
 
                 const searchURL = {
-
                     "Qwant Junior": "https://www.qwantjunior.com/?q=",
                     "Ecosia": "https://www.ecosia.org/search?q=",
                     "Bing": "https://www.bing.com/search?q=",
@@ -47,23 +43,18 @@
                     "Yahoo": "https://search.yahoo.com/search?p=",
                     "Startpage": "https://www.startpage.com/do/search?query=",
                     "Brave Search": "https://search.brave.com/search?q="
-                
                 }[searchEngine] ?? "https://www.google.com/search?q=";
 
                 document.getElementById("searchForm").addEventListener("submit", function (event) {
-    
                     event.preventDefault();
                     const search = searchInput.value;
-                    const link = `${searchurl}${encodeURIComponent(search)}`;
+                    const link = `${searchURL}${encodeURIComponent(search)}`;
                     window.location.href = link;
-
                 });
-
             });
-
         });
-
     </script>
 
 </body>
+
 </html>

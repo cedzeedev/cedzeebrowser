@@ -84,7 +84,7 @@
                 nextBtn.addEventListener('click', () => {
                     if (!selectedEngine) return;
                     cedzeebrowser.set('searchEngine', selectedEngine);
-                    window.location.href = 'index.html';
+                    window.location.href = 'cedzee://home';
                 });
                 cedzeebrowser.get('searchEngine', function (current) {
                     if (!current) return;
