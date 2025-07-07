@@ -15,8 +15,6 @@ try:
     from bridge import CedzeeBridge
 except ImportError:
     print("Error: bridge.py not found.")
-    exit(1)
-
 
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot

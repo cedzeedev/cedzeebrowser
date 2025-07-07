@@ -1,8 +1,12 @@
 import json
-import requests
 import os
 import base64
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QVariant
+try:
+    import requests
+except ImportError:
+    print("error: requests library not installed. Please install it using 'pip install requests'.")
+    requests = None
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "resources", "config.json")
 
