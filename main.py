@@ -14,12 +14,8 @@ except ImportError:
 try:
     from bridge import CedzeeBridge
 except ImportError:
-    print("Warning: bridge.py not found. Some functionalities might be unavailable.")
-    class CedzeeBridge(object):
-        def __init__(self, parent=None):
-            super().__init__()
-        from PyQt6.QtCore import pyqtSignal
-        settingChanged = pyqtSignal(str, object)
+    print("Error: bridge.py not found.")
+    exit(1)
 
 
 from PyQt6.QtWebChannel import QWebChannel
@@ -74,8 +70,8 @@ update_page_url = os.path.abspath(f"{directory}/web/update.html")
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
 game_url = os.path.abspath(f"{directory}/offline/game.html")
 welcome_url = os.path.abspath(f"{directory}/web/welcome.html")
-contributors_url = os.path.abspath(f"{directory}/web/contributors.html") # Added for consistency
-favorites_url = os.path.abspath(f"{directory}/web/favorites.html") # Added for consistency
+contributors_url = os.path.abspath(f"{directory}/web/contributors.html")
+favorites_url = os.path.abspath(f"{directory}/web/favorites.html")
 CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
 
 version_json_url = (
@@ -141,7 +137,7 @@ class NetworkRequestLogger(QWebEngineUrlRequestInterceptor):
         url = info.requestUrl().toString()
         method = info.requestMethod().data().decode('utf-8')
         resource_type = info.resourceType()
-        print(f"[Network] {method} {url} (Type: {resource_type.name})")
+        # print(f"[Network] {method} {url} (Type: {resource_type.name})") # Décommenter pour voir les requêtes réseau - slohwnix
 
 # web browser
 class CustomWebEnginePage(QWebEnginePage):
@@ -259,7 +255,7 @@ class BrowserWindow(QMainWindow):
             ("Ctrl+T", self.open_new_tab),
             ("Ctrl+W", lambda: self.close_tab(self.stacked_widget.currentIndex())),
             ("Ctrl+R", lambda: self.current_browser().reload()),
-            ("F5",   lambda: self.current_browser().reload()),
+            ("F5",     lambda: self.current_browser().reload()),
             ("Ctrl+H", self.open_history),
             ("Ctrl+B", self.toggle_sidebar),
         ]:
@@ -296,7 +292,7 @@ class BrowserWindow(QMainWindow):
             "add": "add.png",
             "dev": "dev.png",
             "history": "history.png",
-            "favorites1": "favorites.png",
+            "favoris": "favorites.png",
         }
 
         # Left icons
@@ -306,7 +302,7 @@ class BrowserWindow(QMainWindow):
             ("forward", lambda: self.current_browser().forward()),
             ("refresh", lambda: self.current_browser().reload()),
             ("home", self.go_home),
-            ("favorites1", self.open_favorites),
+            ("favoris", self.open_favorites),
         ]:
             btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
             btn.setToolTip(name.capitalize())
@@ -495,15 +491,15 @@ class BrowserWindow(QMainWindow):
         self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
 
     def handle_js_error(self, message_level, message, line, sourceID):
-        if "Unrecognized feature: 'ch-ua-form-factors'." in message:
-            return
-        if "Document-Policy HTTP header: Unrecognized document policy feature name" in message:
-            return
-        if "Deprecated API for given entry type." in message:
-            return
-        if "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing." in message:
-            return
-        if "Unrecognized feature: 'attribution-reporting'." in message: # Also common for Google services
+        # Ignore les messages d'erreur qui sont partouts
+        common_errors_to_ignore = [
+            "Unrecognized feature: 'ch-ua-form-factors'.",
+            "Unrecognized document policy feature name",
+            "Deprecated API for given entry type.",
+            "An iframe which has both allow-scripts and allow-same-origin",
+            "Unrecognized feature: 'attribution-reporting'.",
+        ]
+        if any(error in message for error in common_errors_to_ignore):
             return
 
         level_map = {
@@ -546,8 +542,9 @@ class BrowserWindow(QMainWindow):
             self.sidebar.takeItem(index)
             w.deleteLater()
             if self.stacked_widget.count() > 0:
-                self.stacked_widget.setCurrentIndex(max(0, index - 1))
-                self.sidebar.setCurrentRow(max(0, index - 1))
+                new_index = max(0, index - 1)
+                self.stacked_widget.setCurrentIndex(new_index)
+                self.sidebar.setCurrentRow(new_index)
                 self.update_urlbar(self.current_browser().url(), self.current_browser())
 
 
@@ -582,14 +579,17 @@ class BrowserWindow(QMainWindow):
         if not os.path.exists(history_dir):
             os.makedirs(history_dir)
 
-    def save_to_history(self, url_str: str):
-        if url_str.startswith("http://") or url_str.startswith("https://") or url_str.startswith("cedzee://"):
+    def save_to_history(self, url_str: str, title: str):
+        if url_str.startswith("http://") or url_str.startswith("https://"):
+            if not title or title.startswith("http") or title == "Chargement...":
+                return
+            
             history_path = os.path.join(directory, "resources", "config", "history.csv")
             try:
                 with open(history_path, mode="a", newline="", encoding="utf-8") as f:
                     writer = csv.writer(f)
                     writer.writerow(
-                        [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), url_str]
+                        [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), url_str, title]
                     )
             except Exception as e:
                 print(f"Erreur lors de l'écriture dans l'historique : {e}")
@@ -600,7 +600,7 @@ class BrowserWindow(QMainWindow):
                 f"{directory}/resources/config/history.csv", mode="r", encoding="utf-8"
             ) as f:
                 reader = csv.reader(f)
-                self.history = [row[1] for row in reader]
+                self.history = [row[1] for row in reader if len(row) > 1]
                 self.history_index = len(self.history) - 1
         except FileNotFoundError:
             self.history = []
@@ -635,7 +635,10 @@ class BrowserWindow(QMainWindow):
         self.address_input.setCursorPosition(0)
         self.address_input.blockSignals(False)
 
-        self.save_to_history(disp)
+        if browser_instance:
+            title = browser_instance.title()
+            self.save_to_history(disp, title)
+
         self.update_favorite_icon(current_url_str)
 
     def show_tab_context_menu(self, pos):

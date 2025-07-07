@@ -7,32 +7,63 @@
     <link rel="stylesheet" href="../theme/theme.css" />
     <title>Favoris</title>
     <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            outline: 0;
+            font-family: sans-serif;
+        }
+
+        body {
+            background: rgb(69, 69, 69);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        h1 {
+            font-size: max(25px, 10vmin);
+            background: rgb(255, 255, 255);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 20px;
+        }
+
         ul {
             list-style-type: none;
             padding: 0;
-            color: rgb(255, 255, 255);
+            width: 90%;
+            max-width: 800px;
         }
-
 
         li {
             margin: 10px 0;
-            color: rgb(255, 255, 255);
-            background: var(--background-li);
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 4px 8px #2d64ca;
+            background: #3a3a3a;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
         li:hover {
-            background: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 6px 12px #2d64ca;
-            margin: 20px 0;
-            padding: 25px;
+            transform: translateY(-2px);
+            background-color: #505050;
         }
 
         a {
             text-decoration: none;
-            color: white;
+            color: #5dade2;
+            font-size: 1.1rem;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -65,7 +96,7 @@
             } catch (error) {
                 console.error('Impossible de charger les favoris :', error);
                 const listEl = document.getElementById('favorites-list');
-                listEl.innerHTML = "<li>Vous n'avez pas enregistrer de pages</li>";
+                listEl.innerHTML = "<li>Vous n'avez pas enregistré de pages.</li>";
             }
         }
 

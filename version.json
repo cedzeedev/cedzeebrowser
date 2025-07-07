@@ -1,10 +1,13 @@
 [
     {
-        "version": "1.2",
-        "date": "2025-07-03",
+        "version": "1.3",
+        "date": "2025-07-07",
         "changes": [
-            "Add Update system",
-            "patch bugs"
+            "add favorite system",
+            "the history, favorites and welcome interface has been improved",
+            "Add Cedzee:// protocol",
+            "Redesign History and contributors pages",
+            "The history button create now a new tab for the history"
         ]
     }
 ]
