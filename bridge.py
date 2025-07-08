@@ -90,7 +90,7 @@ class CedzeeBridge(QObject):
                 'status': code
             }
     @pyqtSlot()
-    def Update(self):
+    def update(self):
                 try:
                     Update.update_all()  
                     print("✅ update_all() lancée avec succès")
