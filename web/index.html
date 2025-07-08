@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta cedzeeapp_horizontale="1000">
+    <meta cedzeeapp_horizontal="1000">
     <meta cedzeeapp_vertical="600">
     <meta cedzeeapp_title="Cedzee Search">
     <link rel="stylesheet" href="../theme/theme.css" />
@@ -30,9 +30,7 @@
     <script>
         function fallbackToGoogle() {
             const searchInput = document.getElementById('searchQuery');
-            const defaultEngine = "Google";
             const searchURL = "https://www.google.com/search?q=";
-            searchInput.placeholder = `Rechercher avec ${defaultEngine}...`;
 
             document.getElementById("searchForm").addEventListener("submit", function (event) {
                 event.preventDefault();
@@ -48,20 +46,15 @@
             }
 
             new QWebChannel(qt.webChannelTransport, function (channel) {
-                if (!channel.objects.cedzeebrowser || !channel.objects.cedzeebrowser.get) {
+                const cedzeebrowser = channel.objects.cedzeebrowser;
+                if (!cedzeebrowser || !cedzeebrowser.get) {
                     fallbackToGoogle();
                     return;
                 }
 
-                const cedzeebrowser = channel.objects.cedzeebrowser;
-
                 cedzeebrowser.get('searchEngine', function (searchEngine) {
-                    searchEngine = searchEngine ?? "Google";
-                    const searchInput = document.getElementById('searchQuery');
-
-                    searchInput.placeholder = `Rechercher avec ${searchEngine}...`;
-
-                    const searchURL = {
+                    const urls = {
+                        "Google": "https://www.google.com/search?q=",
                         "Qwant Junior": "https://www.qwantjunior.com/?q=",
                         "Ecosia": "https://www.ecosia.org/search?q=",
                         "Bing": "https://www.bing.com/search?q=",
@@ -69,7 +62,9 @@
                         "Yahoo": "https://search.yahoo.com/search?p=",
                         "Startpage": "https://www.startpage.com/do/search?query=",
                         "Brave Search": "https://search.brave.com/search?q="
-                    }[searchEngine] ?? "https://www.google.com/search?q=";
+                    };
+                    const searchURL = urls[searchEngine] || urls["Google"];
+                    const searchInput = document.getElementById('searchQuery');
 
                     document.getElementById("searchForm").addEventListener("submit", function (event) {
                         event.preventDefault();
