@@ -2,6 +2,8 @@ import os
 import sys
 import csv
 import json
+import platform
+from urllib.parse import urlparse, urlunparse, quote
 from datetime import datetime
 from AppEngine import start_app 
 import requests
@@ -692,12 +694,47 @@ class BrowserWindow(QMainWindow):
             print("No active browser tab found to get URL from.", file=sys.stderr)
 
 
-if __name__ == "__main__":
-    window = BrowserWindow()
-    window.show()
-    if check_first_run():
-        window.open_welcome_tab()
 
-    if update_available:
-        window.open_update_tab()
-    application.exec()
+def path_to_uri(path):
+    path = os.path.abspath(path)
+    system = platform.system()
+
+    if system == "Windows":
+        path = path.replace("\\", "/")
+        if not path.startswith("/"):
+            path = "/" + path
+        uri = "file://" + path
+    elif system in ("Linux", "Darwin"):
+        uri = "file://" + path
+    else:
+        uri = "file://" + path
+    uri = quote(uri, safe=":/")
+    return uri
+
+def is_url(string):
+    parsed = urlparse(string)
+    return parsed.scheme in ("http", "https")
+
+if __name__ == "__main__":
+    if len(sys.argv) <= 1:
+        window = BrowserWindow()
+        window.show()
+
+        if check_first_run():
+            window.open_welcome_tab()
+
+        if update_available:
+            window.open_update_tab()
+
+        application.exec()
+    else:
+        fichier = sys.argv[1]
+
+        if is_url(fichier):
+            start_app(fichier)
+        else:
+            if fichier.endswith(".html") or fichier.endswith(".cedapp"):
+                uri = path_to_uri(fichier)
+                start_app(uri)
+            else:
+                print("Fichier non supporté ou format inconnu.")
