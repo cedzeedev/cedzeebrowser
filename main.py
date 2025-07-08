@@ -159,8 +159,10 @@ class CustomWebEnginePage(QWebEnginePage):
     def certificateError(self, certificate_error: QWebEngineCertificateError):
         print(f"Erreur de certificat détectée pour {certificate_error.url().toString()}: {certificate_error.errorDescription()}", file=sys.stderr)
         return True
+    
+class IgnoreJavascriptMessage(QWebEnginePage):
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
-        return
+        pass
 
 
 class BrowserWindow(QMainWindow):
@@ -194,6 +196,9 @@ class BrowserWindow(QMainWindow):
         self.main_layout.addWidget(self.stacked_widget)
 
         self.menu = QToolBar("Menu de navigation")
+        self.menu.setEnabled(True)
+        self.menu.setVisible(True)
+        self.menu.setAllowedAreas(Qt.ToolBarArea.TopToolBarArea | Qt.ToolBarArea.BottomToolBarArea)
         self.addToolBar(self.menu)
         self.add_navigation_buttons()
         
@@ -223,6 +228,9 @@ class BrowserWindow(QMainWindow):
             print("theme.css not found.")
 
         self.add_homepage_tab()
+
+    def contextMenuEvent(self, event):
+        event.ignore()
 
     def _setup_shortcuts(self):
         for seq, fn in [
@@ -441,6 +449,7 @@ class BrowserWindow(QMainWindow):
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
         browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
         browser.loadFinished.connect(lambda ok, b=browser: self.handle_load_finished(ok, b))
+        browser.setPage(IgnoreJavascriptMessage(browser))
         return browser
 
     def add_homepage_tab(self):
@@ -653,15 +662,20 @@ class BrowserWindow(QMainWindow):
 
     def show_tab_context_menu(self, pos):
         item = self.sidebar.itemAt(pos)
-        if not item:
-            return
-        menu = QMenu()
-        new_tab = menu.addAction("Ouvrir un nouvel onglet")
-        close_tab = menu.addAction("Fermer cet onglet")
+        menu = QMenu(self)
+
+        if item:
+            new_tab = menu.addAction("Ouvrir un nouvel onglet")
+            close_tab = menu.addAction("Fermer cet onglet")
+        else:
+            new_tab = menu.addAction("Ouvrir un nouvel onglet")
+            close_tab = None
+
         action = menu.exec(self.sidebar.mapToGlobal(pos))
+
         if action == new_tab:
             self.open_new_tab()
-        elif action == close_tab:
+        elif close_tab and action == close_tab:
             idx = self.sidebar.row(item)
             self.close_tab(idx)
 
