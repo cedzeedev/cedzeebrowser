@@ -1,7 +1,6 @@
 certifi==2025.6.15
 charset-normalizer==3.4.2
 idna==3.10
-pip==25.0.1
 PyQt6==6.9.1
 PyQt6-Qt6==6.9.1
 PyQt6_sip==13.10.2
@@ -9,3 +8,4 @@ PyQt6-WebEngine==6.9.0
 PyQt6-WebEngine-Qt6==6.9.1
 requests==2.32.4
 urllib3==2.5.0
+dulwich=0.23.2

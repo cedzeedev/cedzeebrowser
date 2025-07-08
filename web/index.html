@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta cedzeeapp_horizontale="1000">
+    <meta cedzeeapp_vertical="600">
+    <meta cedzeeapp_title="Cedzee Search">
     <link rel="stylesheet" href="../theme/theme.css" />
     <title>CEDZEE Search Engine</title>
 </head>
@@ -24,35 +27,64 @@
 
     <a class="cedzee-button-contributors" href="cedzee://contributors">Contributeurs</a>
 
-    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
-        new QWebChannel(qt.webChannelTransport, function (channel) {
-            window.cedzeebrowser = channel.objects.cedzeebrowser;
+        function fallbackToGoogle() {
+            const searchInput = document.getElementById('searchQuery');
+            const defaultEngine = "Google";
+            const searchURL = "https://www.google.com/search?q=";
+            searchInput.placeholder = `Rechercher avec ${defaultEngine}...`;
 
-            cedzeebrowser.get('searchEngine', function (searchEngine) {
-                searchEngine = searchEngine ?? "Google";
-                const searchInput = document.getElementById('searchQuery');
+            document.getElementById("searchForm").addEventListener("submit", function (event) {
+                event.preventDefault();
+                const search = searchInput.value;
+                window.location.href = `${searchURL}${encodeURIComponent(search)}`;
+            });
+        }
 
-                searchInput.placeholder = `Rechercher avec ${searchEngine}...`;
+        function initializeCEDZEE() {
+            if (typeof qt === 'undefined' || typeof QWebChannel === 'undefined') {
+                fallbackToGoogle();
+                return;
+            }
 
-                const searchURL = {
-                    "Qwant Junior": "https://www.qwantjunior.com/?q=",
-                    "Ecosia": "https://www.ecosia.org/search?q=",
-                    "Bing": "https://www.bing.com/search?q=",
-                    "DuckDuckGo": "https://duckduckgo.com/?q=",
-                    "Yahoo": "https://search.yahoo.com/search?p=",
-                    "Startpage": "https://www.startpage.com/do/search?query=",
-                    "Brave Search": "https://search.brave.com/search?q="
-                }[searchEngine] ?? "https://www.google.com/search?q=";
+            new QWebChannel(qt.webChannelTransport, function (channel) {
+                if (!channel.objects.cedzeebrowser || !channel.objects.cedzeebrowser.get) {
+                    fallbackToGoogle();
+                    return;
+                }
 
-                document.getElementById("searchForm").addEventListener("submit", function (event) {
-                    event.preventDefault();
-                    const search = searchInput.value;
-                    const link = `${searchURL}${encodeURIComponent(search)}`;
-                    window.location.href = link;
+                const cedzeebrowser = channel.objects.cedzeebrowser;
+
+                cedzeebrowser.get('searchEngine', function (searchEngine) {
+                    searchEngine = searchEngine ?? "Google";
+                    const searchInput = document.getElementById('searchQuery');
+
+                    searchInput.placeholder = `Rechercher avec ${searchEngine}...`;
+
+                    const searchURL = {
+                        "Qwant Junior": "https://www.qwantjunior.com/?q=",
+                        "Ecosia": "https://www.ecosia.org/search?q=",
+                        "Bing": "https://www.bing.com/search?q=",
+                        "DuckDuckGo": "https://duckduckgo.com/?q=",
+                        "Yahoo": "https://search.yahoo.com/search?p=",
+                        "Startpage": "https://www.startpage.com/do/search?query=",
+                        "Brave Search": "https://search.brave.com/search?q="
+                    }[searchEngine] ?? "https://www.google.com/search?q=";
+
+                    document.getElementById("searchForm").addEventListener("submit", function (event) {
+                        event.preventDefault();
+                        const search = searchInput.value;
+                        window.location.href = `${searchURL}${encodeURIComponent(search)}`;
+                    });
                 });
             });
-        });
+        }
+
+        const script = document.createElement('script');
+        script.src = 'qrc:///qtwebchannel/qwebchannel.js';
+        script.onload = initializeCEDZEE;
+        script.onerror = fallbackToGoogle;
+        document.head.appendChild(script);
     </script>
 
 </body>

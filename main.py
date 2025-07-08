@@ -3,30 +3,21 @@ import sys
 import csv
 import json
 from datetime import datetime
-try:
-    import requests
-except ImportError:
-    print("Warning: 'requests' library not found. Online version check might be unavailable.")
-    class DummyRequests:
-        def get(self, url, timeout=None):
-            raise Exception("requests library not installed.")
-    requests = DummyRequests()
-try:
-    from bridge import CedzeeBridge
-except ImportError:
-    print("Error: bridge.py not found.")
-
+from AppEngine import start_app 
+import requests
+from bridge import CedzeeBridge
+from Update import update_all
 from PyQt6.QtWebChannel import QWebChannel
-from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot
+from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot, QRect, QPoint
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import (
     QWebEngineProfile,
     QWebEnginePage,
     QWebEngineDownloadRequest,
-    QWebEngineCertificateError, 
-    QWebEngineUrlRequestInterceptor, 
-    QWebEngineUrlRequestInfo 
+    QWebEngineCertificateError,
+    QWebEngineUrlRequestInterceptor,
+    QWebEngineUrlRequestInfo
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -36,10 +27,14 @@ from PyQt6.QtWidgets import (
     QToolBar,
     QWidget,
     QHBoxLayout,
+    QVBoxLayout,
     QStackedWidget,
     QListWidget,
     QListWidgetItem,
     QFileDialog,
+    QFrame,
+    QPushButton,
+    QToolButton
 )
 
 
@@ -54,14 +49,12 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--enable-native-gpu-memory-buffers"
 )
 
-# PyQt application setup
 application = QApplication.instance()
 directory = os.path.dirname(os.path.abspath(__file__))
 
 if not application:
     application = QApplication(sys.argv)
 
-# utils variables
 home_url = os.path.abspath(f"{directory}/web/index.html")
 history_page_url = os.path.abspath(f"{directory}/web/history.html")
 update_page_url = os.path.abspath(f"{directory}/web/update.html")
@@ -76,7 +69,6 @@ version_json_url = (
     "https://raw.githubusercontent.com/cedzeedev/cedzeebrowser/refs/heads/main/version.json"
 )
 
-# verify if it's the first run
 def check_first_run():
     if not os.path.exists(CONFIG_FILE):
         config = {"first_run": True}
@@ -94,7 +86,6 @@ def check_first_run():
         else:
             return False
 
-# Load local version information
 version_file_pth = f"{directory}/version.json"
 try:
     with open(version_file_pth, "r", encoding="utf-8") as file:
@@ -104,8 +95,6 @@ except Exception as e:
     print(f"Erreur lors du chargement de la version : {e}")
     version = "inconnue"
 
-
-# load online version information
 def get_online_version():
     try:
         response = requests.get(version_json_url, timeout=10)
@@ -115,12 +104,10 @@ def get_online_version():
     except Exception:
         return "error"
 
-
 version_online = get_online_version()
 update_available = False
 if version_online != "error" and version != version_online and version < version_online:
     update_available = True
-    # téléchargement du fichier JSON version
     try:
         response = requests.get(version_json_url, timeout=10)
         if response.status_code == 200:
@@ -135,15 +122,8 @@ class NetworkRequestLogger(QWebEngineUrlRequestInterceptor):
         url = info.requestUrl().toString()
         method = info.requestMethod().data().decode('utf-8')
         resource_type = info.resourceType()
-        # print(f"[Network] {method} {url} (Type: {resource_type.name})") # Décommenter pour voir les requêtes réseau - slohwnix
 
-# web browser
 class CustomWebEnginePage(QWebEnginePage):
-    """
-    Intercepte les clics sur `cedzee://…` pour rediriger vers le fichier local.
-    Gère également les erreurs de certificat TLS/SSL.
-    """
-
     def __init__(self, profile, parent=None, browser_window=None):
         super().__init__(profile, parent)
         self.browser_window = browser_window
@@ -176,7 +156,7 @@ class CustomWebEnginePage(QWebEnginePage):
 
     def certificateError(self, certificate_error: QWebEngineCertificateError):
         print(f"Erreur de certificat détectée pour {certificate_error.url().toString()}: {certificate_error.errorDescription()}", file=sys.stderr)
-        return True 
+        return True
 
 
 class BrowserWindow(QMainWindow):
@@ -184,18 +164,15 @@ class BrowserWindow(QMainWindow):
         super().__init__()
         self.ensure_history_file()
 
-        # Window properties
         self.setWindowTitle("CEDZEE Browser")
         self.resize(1200, 800)
         self.move(300, 50)
 
-        # Main widget and layout
         self.main_widget = QWidget()
         self.setCentralWidget(self.main_widget)
         self.main_layout = QHBoxLayout(self.main_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Sidebar
         self.sidebar = QListWidget()
         self.sidebar.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.sidebar.model().rowsMoved.connect(self.on_sidebar_rows_moved)
@@ -209,26 +186,21 @@ class BrowserWindow(QMainWindow):
         self.sidebar_animation.setDuration(200)
         self.sidebar_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
 
-        # Tab area
         self.stacked_widget = QStackedWidget()
         self.main_layout.addWidget(self.stacked_widget)
 
-        # Menu toolbar
         self.menu = QToolBar("Menu de navigation")
         self.addToolBar(self.menu)
         self.add_navigation_buttons()
+        
+        self.create_more_menu()
 
-        # Context menu for sidebar tabs
         self.sidebar.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.sidebar.customContextMenuRequested.connect(self.show_tab_context_menu)
 
-        # Keyboard shortcuts
         self._setup_shortcuts()
-
-        # History management
         self.load_history()
 
-        # WebEngine profile setup
         profile_path = f"{directory}/browser_data"
         self.profile = QWebEngineProfile("Default", self)
         self.profile.setPersistentStoragePath(profile_path)
@@ -291,44 +263,95 @@ class BrowserWindow(QMainWindow):
             "dev": "dev.png",
             "history": "history.png",
             "favoris": "favorites.png",
+            "more": "more.png",
         }
 
-        # Left icons
         for name, fn in [
             ("menu", self.toggle_sidebar),
             ("back", lambda: self.current_browser().back()),
             ("forward", lambda: self.current_browser().forward()),
             ("refresh", lambda: self.current_browser().reload()),
             ("home", self.go_home),
-            ("favoris", self.open_favorites),
         ]:
             btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
             btn.setToolTip(name.capitalize())
             btn.triggered.connect(fn)
             self.menu.addAction(btn)
 
-        # URL bar
         self.address_input = QLineEdit()
         self.address_input.returnPressed.connect(self.navigate_to_url)
         self.menu.addWidget(self.address_input)
 
-        # Right icons
         for name, fn in [
             ("add", self.open_new_tab),
-            ("dev", self.open_devtools),
-            ("history", self.open_history),
         ]:
             btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
             btn.setToolTip(name.capitalize())
             btn.triggered.connect(fn)
             self.menu.addAction(btn)
-
 
         self.favorite_action = QAction(self.fav_icon_add, "Ajouter aux favoris", self)
         self.favorite_action.setToolTip("Ajouter aux favoris")
         self.favorite_action.triggered.connect(self.toggle_favorite)
         self.menu.addAction(self.favorite_action)
 
+        self.more_button = QToolButton(self)
+        self.more_button.setIcon(QIcon(f"{directory}/resources/icons/{icons['more']}"))
+        self.more_button.setToolTip("Plus d'options")
+        self.more_button.clicked.connect(self.toggle_more_menu)
+        self.menu.addWidget(self.more_button)
+
+    def create_more_menu(self):
+        self.more_menu = QFrame(self)
+        self.more_menu.setObjectName("moreMenu")
+        self.more_menu.hide()
+
+        menu_layout = QVBoxLayout(self.more_menu)
+        menu_layout.setContentsMargins(4, 4, 4, 4)
+        menu_layout.setSpacing(2)
+
+        icons_path = f"{directory}/resources/icons/"
+        
+        menu_items = [
+            ("history", "Historique", self.open_history),
+            ("favorites", "Favoris", self.open_favorites),
+            ("dev", "Outils de développement", self.open_devtools),
+            ("open_in_app", "Ouvrir dans une application", self.open_current_url_in_app),
+        ]
+        
+        for icon, text, func in menu_items:
+            btn = QPushButton(QIcon(f"{icons_path}/{icon}.png"), f" {text}")
+            btn.clicked.connect(lambda _, f=func: (f(), self.toggle_more_menu()))
+            btn.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+            menu_layout.addWidget(btn)
+
+        self.menu_animation = QPropertyAnimation(self.more_menu, b"geometry")
+        self.menu_animation.setDuration(200)
+        self.menu_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        
+    def toggle_more_menu(self):
+        button_pos = self.more_button.mapTo(self, QPoint(0, self.more_button.height()))
+        menu_width = 220
+        menu_height = self.more_menu.sizeHint().height()
+        
+        start_pos_x = button_pos.x() + self.more_button.width() - menu_width
+        start_pos_y = button_pos.y()
+        
+        if self.more_menu.isVisible():
+            start_geom = QRect(start_pos_x, start_pos_y, menu_width, menu_height)
+            end_geom = QRect(start_pos_x, start_pos_y, menu_width, 0)
+            self.menu_animation.finished.connect(self.more_menu.hide)
+        else:
+            start_geom = QRect(start_pos_x, start_pos_y, menu_width, 0)
+            end_geom = QRect(start_pos_x, start_pos_y, menu_width, menu_height)
+            self.more_menu.setGeometry(start_geom)
+            self.more_menu.show()
+            try: self.menu_animation.finished.disconnect() 
+            except TypeError: pass
+
+        self.menu_animation.setStartValue(start_geom)
+        self.menu_animation.setEndValue(end_geom)
+        self.menu_animation.start()
 
     def toggle_favorite(self):
         browser = self.current_browser()
@@ -385,7 +408,6 @@ class BrowserWindow(QMainWindow):
     def go_home(self):
         if self.current_browser():
             self.current_browser().setUrl(QUrl.fromLocalFile(home_url))
-
 
     def toggle_sidebar(self):
         current_width = self.sidebar.maximumWidth()
@@ -489,7 +511,6 @@ class BrowserWindow(QMainWindow):
         self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
 
     def handle_js_error(self, message_level, message, line, sourceID):
-        # Ignore les messages d'erreur qui sont partouts
         common_errors_to_ignore = [
             "Unrecognized feature: 'ch-ua-form-factors'.",
             "Unrecognized document policy feature name",
@@ -514,7 +535,6 @@ class BrowserWindow(QMainWindow):
             if not current_url.isLocalFile() and current_url.scheme() in ["http", "https"]:
                 print(f"Échec de chargement pour {current_url.toString()}. Redirection vers la page hors ligne.", file=sys.stderr)
                 browser_instance.setUrl(QUrl.fromLocalFile(offline_url))
-
 
     def open_devtools(self):
         devtools = QWebEngineView()
@@ -545,7 +565,6 @@ class BrowserWindow(QMainWindow):
                 self.sidebar.setCurrentRow(new_index)
                 self.update_urlbar(self.current_browser().url(), self.current_browser())
 
-
     def navigate_to_url(self):
         text = self.address_input.text().strip()
         cedzee_routes = {
@@ -570,7 +589,6 @@ class BrowserWindow(QMainWindow):
 
         if self.current_browser():
             self.current_browser().setUrl(url_to_load)
-
 
     def ensure_history_file(self):
         history_dir = os.path.join(directory, "resources", "config")
@@ -609,7 +627,6 @@ class BrowserWindow(QMainWindow):
 
     def open_favorites(self):
         self.open_tab(QUrl.fromLocalFile(favorites_url))
-
 
     def update_urlbar(self, url: QUrl, browser_instance=None):
         if browser_instance != self.current_browser():
@@ -668,6 +685,19 @@ class BrowserWindow(QMainWindow):
                 print(f"Téléchargement terminé : {path}")
 
         download_item.stateChanged.connect(done)
+
+    def open_current_url_in_app(self):
+        current_browser_widget = self.current_browser()
+        if current_browser_widget:
+            current_url = current_browser_widget.url().toString()
+            print(f"Attempting to open URL in external app: {current_url}")
+            try:
+                start_app(current_url)
+                print(f"Successfully called start_app for URL: {current_url}")
+            except Exception as e:
+                print(f"Error calling AppEngine.start_app: {e}", file=sys.stderr)
+        else:
+            print("No active browser tab found to get URL from.", file=sys.stderr)
 
 
 if __name__ == "__main__":
