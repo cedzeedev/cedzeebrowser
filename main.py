@@ -6,6 +6,7 @@ from datetime import datetime
 from AppEngine import start_app 
 import requests
 from bridge import CedzeeBridge
+from Update import update_all
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot, QRect, QPoint
 from PyQt6.QtGui import QAction, QIcon

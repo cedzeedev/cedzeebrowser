@@ -1,6 +1,7 @@
 import json
 import os
 import base64
+import Update
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QVariant
 try:
     import requests
@@ -88,6 +89,13 @@ class CedzeeBridge(QObject):
                 'error': err,
                 'status': code
             }
+    @pyqtSlot()
+    def Update(self):
+                try:
+                    Update.update_all()  
+                    print("✅ update_all() lancée avec succès")
+                except Exception as e:
+                    print(f"❌ Erreur lors de la mise à jour : {e}")
 
     @pyqtSlot(result='QVariantMap')
     def getAll(self) -> dict:

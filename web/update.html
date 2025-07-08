@@ -13,12 +13,16 @@
     <h3 id="update-title">Chargement de la mise à jour...</h3>
     <p id="version-info"></p>
     <ul id="change-list"></ul>
-    <a class="cedzee-button-contributors" href="https://github.com/cedzeedev/cedzeebrowser/">Mettre à jour</a>
+
+    <button class="cedzee-button-contributors" id="update-button">Mettre à jour</button>
 
     <script>
         const title = document.getElementById("update-title");
         const versionInfo = document.getElementById("version-info");
         const changeList = document.getElementById("change-list");
+        const updateButton = document.getElementById("update-button");
+
+        let cedzeebrowser = null;
 
         Promise.all([
             fetch("../version.json").then(res => {
@@ -43,14 +47,35 @@
                         li.textContent = change;
                         changeList.appendChild(li);
                     });
+
+                    updateButton.style.display = "inline-block";
+
                 } else {
                     title.textContent = "Votre version est à jour.";
+                    updateButton.style.display = "none";
                 }
             })
             .catch(error => {
                 title.textContent = "Impossible de vérifier les mises à jour.";
                 console.error("Erreur :", error);
             });
+
+        const script = document.createElement('script');
+        script.src = 'qrc:///qtwebchannel/qwebchannel.js';
+        script.onload = () => {
+            new QWebChannel(qt.webChannelTransport, function (channel) {
+                cedzeebrowser = channel.objects.cedzeebrowser;
+
+                updateButton.addEventListener("click", () => {
+                    if (cedzeebrowser && cedzeebrowser.update) {
+                        cedzeebrowser.update();
+                    } else {
+                        console.error("cedzeebrowser.update non disponible");
+                    }
+                });
+            });
+        };
+        document.head.appendChild(script);
     </script>
 
 </body>
