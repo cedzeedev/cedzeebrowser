@@ -62,8 +62,8 @@ welcome_url = os.path.abspath(f"{directory}/web/welcome.html")
 contributors_url = os.path.abspath(f"{directory}/web/contributors.html")
 favorites_url = os.path.abspath(f"{directory}/web/favorites.html")
 
-Windows_size_X = 1200
-Windows_size_Y = 800
+Window_width = 1200
+Window_height = 800
 Window_Title = "Cedzee Browser"
 
 CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
@@ -125,7 +125,7 @@ class BrowserWindow(QMainWindow):
 
         # Window properties
         self.setWindowTitle(Window_Title)
-        self.resize(Windows_size_X, Windows_size_Y)
+        self.resize(Window_width, Window_height)
         self.move(300, 50)
 
         # Main widget and layout
@@ -302,8 +302,8 @@ if __name__ == "__main__":
 
 def start_app(url: str):
     global home_url
-    global Windows_size_X
-    global Windows_size_Y
+    global Window_width
+    global Window_height
     global Window_Title
 
 
@@ -326,15 +326,15 @@ def start_app(url: str):
         html = response.text
 
     soup = BeautifulSoup(html, 'html.parser')
-    horizontale = soup.find('meta', attrs={'cedzeeapp_horizontale': True})
+    horizontal = soup.find('meta', attrs={'cedzeeapp_horizontal': True})
     vertical = soup.find('meta', attrs={'cedzeeapp_vertical': True})
     title = soup.find('meta', attrs={'cedzeeapp_title': True})
 
-    if horizontale:
-        Windows_size_X = int(horizontale['cedzeeapp_horizontale'])
+    if horizontal:
+        Window_width = int(horizontal['cedzeeapp_horizontal'])
 
     if vertical:
-        Windows_size_Y = int(vertical['cedzeeapp_vertical'])
+        Window_height = int(vertical['cedzeeapp_vertical'])
 
     if title:
         Window_Title = title['cedzeeapp_title']

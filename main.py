@@ -157,6 +157,8 @@ class CustomWebEnginePage(QWebEnginePage):
     def certificateError(self, certificate_error: QWebEngineCertificateError):
         print(f"Erreur de certificat détectée pour {certificate_error.url().toString()}: {certificate_error.errorDescription()}", file=sys.stderr)
         return True
+    def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
+        return
 
 
 class BrowserWindow(QMainWindow):
@@ -437,7 +439,6 @@ class BrowserWindow(QMainWindow):
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
         browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
         browser.loadFinished.connect(lambda ok, b=browser: self.handle_load_finished(ok, b))
-        browser.page().javaScriptConsoleMessage = self.handle_js_error
         return browser
 
     def add_homepage_tab(self):
@@ -510,31 +511,23 @@ class BrowserWindow(QMainWindow):
         self.stacked_widget.setCurrentWidget(browser)
         self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
 
-    def handle_js_error(self, message_level, message, line, sourceID):
-        common_errors_to_ignore = [
-            "Unrecognized feature: 'ch-ua-form-factors'.",
-            "Unrecognized document policy feature name",
-            "Deprecated API for given entry type.",
-            "An iframe which has both allow-scripts and allow-same-origin",
-            "Unrecognized feature: 'attribution-reporting'.",
-        ]
-        if any(error in message for error in common_errors_to_ignore):
-            return
-
-        level_map = {
-            QWebEnginePage.JavaScriptConsoleMessageLevel.InfoMessageLevel: "INFO",
-            QWebEnginePage.JavaScriptConsoleMessageLevel.WarningMessageLevel: "WARNING",
-            QWebEnginePage.JavaScriptConsoleMessageLevel.ErrorMessageLevel: "ERROR",
-        }
-        level_name = level_map.get(message_level, "UNKNOWN_LEVEL")
-        print(f"JS Console ({level_name}) : {message} (Ligne: {line}, Source: {sourceID})", file=sys.stderr)
+    @staticmethod
+    def is_internet_available() -> bool:
+        try:
+            requests.get("https://www.google.com", timeout=3)
+            return True
+        except requests.RequestException:
+            return False
 
     def handle_load_finished(self, ok: bool, browser_instance: QWebEngineView):
         if not ok:
             current_url = browser_instance.url()
-            if not current_url.isLocalFile() and current_url.scheme() in ["http", "https"]:
-                print(f"Échec de chargement pour {current_url.toString()}. Redirection vers la page hors ligne.", file=sys.stderr)
-                browser_instance.setUrl(QUrl.fromLocalFile(offline_url))
+            if not current_url.isLocalFile() and current_url.scheme() in ("http", "https"):
+                if not BrowserWindow.is_internet_available():
+                    print("Pas de connexion Internet détectée. Affichage page offline.", file=sys.stderr)
+                    browser_instance.setUrl(QUrl.fromLocalFile(offline_url))
+                else:
+                    pass
 
     def open_devtools(self):
         devtools = QWebEngineView()
@@ -683,7 +676,6 @@ class BrowserWindow(QMainWindow):
         def done(state):
             if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
                 print(f"Téléchargement terminé : {path}")
-
         download_item.stateChanged.connect(done)
 
     def open_current_url_in_app(self):
