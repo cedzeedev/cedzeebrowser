@@ -159,8 +159,6 @@ class CustomWebEnginePage(QWebEnginePage):
     def certificateError(self, certificate_error: QWebEngineCertificateError):
         print(f"Erreur de certificat détectée pour {certificate_error.url().toString()}: {certificate_error.errorDescription()}", file=sys.stderr)
         return True
-    
-class IgnoreJavascriptMessage(QWebEnginePage):
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
         pass
 
@@ -449,7 +447,6 @@ class BrowserWindow(QMainWindow):
         browser.urlChanged.connect(lambda url, b=browser: self.update_urlbar(url, b))
         browser.titleChanged.connect(lambda title, b=browser: self.update_tab_title(title, b))
         browser.loadFinished.connect(lambda ok, b=browser: self.handle_load_finished(ok, b))
-        browser.setPage(IgnoreJavascriptMessage(browser))
         return browser
 
     def add_homepage_tab(self):
