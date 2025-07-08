@@ -1,7 +1,6 @@
 import os
 import sys
 import csv
-import sys
 import json
 from datetime import datetime
 import requests
@@ -9,7 +8,7 @@ from pathlib import Path
 
 from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup
-from bridge import CedzeeBridge # Assuming bridge.py exists and CedzeeBridge is defined there
+from bridge import CedzeeBridge
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot
 from PyQt6.QtGui import QAction, QIcon
@@ -24,7 +23,6 @@ from PyQt6.QtWebEngineCore import (
 )
 from PyQt6.QtWidgets import (
     QApplication,
-    # QLineEdit, # Removed QLineEdit
     QMainWindow,
     QMenu,
     QToolBar,
@@ -45,14 +43,12 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--enable-native-gpu-memory-buffers"
 )
 
-# PyQt application setup
 application = QApplication.instance()
 directory = os.path.dirname(os.path.abspath(__file__))
 
 if not application:
     application = QApplication(sys.argv)
 
-# utils variables
 home_url = "https://www.youtube.com"
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
 history_page_url = os.path.abspath(f"{directory}/web/history.html")
@@ -74,22 +70,17 @@ class NetworkRequestLogger(QWebEngineUrlRequestInterceptor):
         url = info.requestUrl().toString()
         method = info.requestMethod().data().decode('utf-8')
         resource_type = info.resourceType()
-        # print(f"[Network] {method} {url} (Type: {resource_type.name})") # Uncomment to see network requests
 
-# web browser
+
 class CustomWebEnginePage(QWebEnginePage):
-    """
-    Handles TLS/SSL certificate errors and custom protocol schemes.
-    """
-
     def __init__(self, profile, parent=None, browser_window=None):
         super().__init__(profile, parent)
         self.browser_window = browser_window
 
     def createWindow(self, _type):
         if self.browser_window and self.browser_window.browser:
-            return self
-
+            return self.browser_window.browser.page()
+        return super().createWindow(_type)
 
     def acceptNavigationRequest(self, url: QUrl, nav_type, isMainFrame):
         if url.scheme() == "cedzee":
@@ -110,7 +101,7 @@ class CustomWebEnginePage(QWebEnginePage):
             else:
                 print(f"Unknown cedzee:// path: {url.toString()}. Loading home.", file=sys.stderr)
                 self.setUrl(QUrl.fromLocalFile(home_url))
-            return False 
+            return False
         return super().acceptNavigationRequest(url, nav_type, isMainFrame)
 
     def certificateError(self, certificate_error: QWebEngineCertificateError):
@@ -123,18 +114,15 @@ class BrowserWindow(QMainWindow):
         super().__init__()
         self.ensure_history_file()
 
-        # Window properties
         self.setWindowTitle(Window_Title)
         self.resize(Window_width, Window_height)
         self.move(300, 50)
 
-        # Main widget and layout
         self.main_widget = QWidget()
         self.setCentralWidget(self.main_widget)
         self.main_layout = QHBoxLayout(self.main_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
 
-        # WebEngine profile setup
         profile_path = f"{directory}/browser_data"
         self.profile = QWebEngineProfile("Default", self)
         self.profile.setPersistentStoragePath(profile_path)
@@ -146,24 +134,25 @@ class BrowserWindow(QMainWindow):
 
         self.request_logger = NetworkRequestLogger()
         self.profile.setUrlRequestInterceptor(self.request_logger)
+
         try:
-            with open(os.path.abspath(f"{directory}/theme/theme.css"), "r") as f:
+            with open(os.path.abspath(f"{directory}/theme/theme.css"), "r", encoding="utf-8") as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
             print("theme.css not found.")
 
-        # Browser view
         self.browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, self.browser, browser_window=self)
         self.browser.setPage(page)
-        self.browser.setUrl(QUrl(home_url))
+        
+        self._attach_webchannel(self.browser) 
+
         if Window_Title == "Cedzee Browser":
             self.browser.titleChanged.connect(self.update_window_title)
         self.browser.loadFinished.connect(self.handle_load_finished)
-        self.browser.page().javaScriptConsoleMessage = self.handle_js_error
+
         self.main_layout.addWidget(self.browser)
 
-        # Menu toolbar
         self.menu = QToolBar("Menu de navigation")
         self.addToolBar(self.menu)
         self.add_navigation_buttons()
@@ -200,7 +189,6 @@ class BrowserWindow(QMainWindow):
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.menu.addWidget(spacer)
 
-        # Right icons
         for name, fn in [
             ("back", lambda: self.browser.back()),
             ("forward", lambda: self.browser.forward()),
@@ -213,32 +201,23 @@ class BrowserWindow(QMainWindow):
     def go_home(self):
         self.browser.setUrl(QUrl(home_url))
 
-    def handle_js_error(self, message_level, message, line, sourceID):
-        common_errors_to_ignore = [
-            "Unrecognized feature: 'ch-ua-form-factors'.",
-            "Unrecognized document policy feature name",
-            "Deprecated API for given entry type.",
-            "An iframe which has both allow-scripts and allow-same-origin",
-            "Unrecognized feature: 'attribution-reporting'.",
-        ]
-        if any(error in message for error in common_errors_to_ignore):
-            return
-
-        level_map = {
-            QWebEnginePage.JavaScriptConsoleMessageLevel.InfoMessageLevel: "INFO",
-            QWebEnginePage.JavaScriptConsoleMessageLevel.WarningMessageLevel: "WARNING",
-            QWebEnginePage.JavaScriptConsoleMessageLevel.ErrorMessageLevel: "ERROR",
-        }
-        level_name = level_map.get(message_level, "UNKNOWN_LEVEL")
-        print(f"JS Console ({level_name}) : {message} (Ligne: {line}, Source: {sourceID})", file=sys.stderr)
+    @staticmethod
+    def is_internet_available() -> bool:
+        try:
+            requests.get("https://www.google.com", timeout=3)
+            return True
+        except requests.RequestException:
+            return False
 
     def handle_load_finished(self, ok: bool):
         if not ok:
             current_url = self.browser.url()
-            if not current_url.isLocalFile() and current_url.scheme() in ["http", "https"]:
-                print(f"Échec de chargement pour {current_url.toString()}. Redirection vers la page hors ligne.", file=sys.stderr)
-                self.browser.setUrl(QUrl.fromLocalFile(offline_url))
-        self.save_to_history(self.browser.url().toString(), self.browser.title())
+            if not current_url.isLocalFile() and current_url.scheme() in ("http", "https"):
+                if not BrowserWindow.is_internet_available():
+                    print("Pas de connexion Internet détectée. Affichage page offline.", file=sys.stderr)
+                    self.browser.setUrl(QUrl.fromLocalFile(offline_url))
+        else:
+            self.save_to_history(self.browser.url().toString(), self.browser.title())
 
     def update_window_title(self, title):
         self.setWindowTitle(f"CEDZEE Browser - {title}")
@@ -295,19 +274,20 @@ class BrowserWindow(QMainWindow):
         self.browser.setUrl(QUrl.fromLocalFile(home_url))
 
 
-if __name__ == "__main__":
-    window = BrowserWindow()
-    window.show()
-    application.exec()
-
 def start_app(url: str):
     global home_url
     global Window_width
     global Window_height
     global Window_Title
 
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
 
-    if url.startswith("file://"):
+    html_content = ""
+    is_local_file = url.startswith("file://")
+    
+    if is_local_file:
         parsed = urlparse(url)
         path = unquote(parsed.path)
 
@@ -317,29 +297,62 @@ def start_app(url: str):
 
         path_obj = Path(path)
         if not path_obj.exists():
-            raise FileNotFoundError(f"Fichier HTML introuvable : {path_obj}")
+            raise FileNotFoundError(f"Fichier introuvable : {path_obj}")
+        
         with open(path_obj, 'r', encoding='utf-8') as f:
-            html = f.read()
+            html_content = f.read()
     else:
-        response = requests.get(url)
-        response.raise_for_status()
-        html = response.text
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            html_content = response.text
+        except requests.RequestException as e:
+            print(f"Erreur lors du téléchargement de l'URL {url}: {e}", file=sys.stderr)
+            url = QUrl.fromLocalFile(offline_url).toString()
+            html_content = ""
 
-    soup = BeautifulSoup(html, 'html.parser')
-    horizontal = soup.find('meta', attrs={'cedzeeapp_horizontal': True})
-    vertical = soup.find('meta', attrs={'cedzeeapp_vertical': True})
-    title = soup.find('meta', attrs={'cedzeeapp_title': True})
+    if html_content:
+        soup = BeautifulSoup(html_content, 'html.parser')
+        horizontal = soup.find('meta', attrs={'cedzeeapp_horizontal': True})
+        vertical = soup.find('meta', attrs={'cedzeeapp_vertical': True})
+        title = soup.find('meta', attrs={'cedzeeapp_title': True})
 
-    if horizontal:
-        Window_width = int(horizontal['cedzeeapp_horizontal'])
+        if horizontal:
+            try:
+                Window_width = int(horizontal['cedzeeapp_horizontal'])
+            except ValueError:
+                print(f"Invalid cedzeeapp_horizontal value: {horizontal['cedzeeapp_horizontal']}")
 
-    if vertical:
-        Window_height = int(vertical['cedzeeapp_vertical'])
+        if vertical:
+            try:
+                Window_height = int(vertical['cedzeeapp_vertical'])
+            except ValueError:
+                print(f"Invalid cedzeeapp_vertical value: {vertical['cedzeeapp_vertical']}")
 
-    if title:
-        Window_Title = title['cedzeeapp_title']
+        if title:
+            Window_Title = title['cedzeeapp_title']
 
     home_url = url
 
     window = BrowserWindow()
+    if is_local_file and html_content:
+        window.browser.setHtml(html_content, QUrl(url))
+    else:
+        window.browser.setUrl(QUrl(url))
+    
     window.show()
+
+    if not QApplication.instance().startingUp():
+        app.exec()
+
+if __name__ == "__main__":
+    initial_load_url = home_url
+    if len(sys.argv) > 1:
+        arg_path = sys.argv[1]
+        if os.path.exists(arg_path):
+            initial_load_url = QUrl.fromLocalFile(os.path.abspath(arg_path)).toString()
+            print(f"Tentative de chargement du fichier local: {initial_load_url}")
+        else:
+            print(f"L'argument fourni '{arg_path}' n'est pas un chemin de fichier valide. Chargement de l'URL d'accueil par défaut.")
+
+    start_app(initial_load_url)

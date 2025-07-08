@@ -17,6 +17,7 @@ bin/
 lib/
 min/
 tmp/
+build_win/
 
 # ENV
 
