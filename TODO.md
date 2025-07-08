@@ -2,7 +2,6 @@
 
 - [ ] système de téléchargements amélioré 
 - [ ] paramètres
-- [ ] nouveaux système de mise à jour (slohwnix)
 - [ ] Besoin d'un logo
 
 ## ✅ Task List optionnels
@@ -21,3 +20,4 @@
 - [X] Refaire le style de `history.html` (slohwnix)
 - [X] Afficher la date et l'heure dans l'historique (slohwnix)
 - [X] Ouvrir un onglet dans une application (slohwnix)
+- [X] nouveaux système de mise à jour (slohwnix)
