@@ -220,7 +220,7 @@ class BrowserWindow(QMainWindow):
             self.save_to_history(self.browser.url().toString(), self.browser.title())
 
     def update_window_title(self, title):
-        self.setWindowTitle(f"{title}")
+        self.setWindowTitle(title)
 
     def ensure_history_file(self):
         history_dir = os.path.join(directory, "resources", "config")
