@@ -8,7 +8,7 @@ from pathlib import Path
 
 from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup
-from bridge import CedzeeBridge
+from src.bridge import CedzeeBridge
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot
 from PyQt6.QtGui import QAction, QIcon
@@ -19,7 +19,7 @@ from PyQt6.QtWebEngineCore import (
     QWebEngineDownloadRequest,
     QWebEngineCertificateError,
     QWebEngineUrlRequestInterceptor,
-    QWebEngineUrlRequestInfo
+    QWebEngineUrlRequestInfo,
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -29,7 +29,7 @@ from PyQt6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QFileDialog,
-    QSizePolicy
+    QSizePolicy,
 )
 
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
@@ -44,7 +44,8 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
 )
 
 application = QApplication.instance()
-directory = os.path.dirname(os.path.abspath(__file__))
+directory1 = os.path.dirname(os.path.abspath(__file__))
+directory = os.path.dirname(directory1)
 
 if not application:
     application = QApplication(sys.argv)
@@ -68,7 +69,7 @@ CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
 class NetworkRequestLogger(QWebEngineUrlRequestInterceptor):
     def interceptRequest(self, info: QWebEngineUrlRequestInfo):
         url = info.requestUrl().toString()
-        method = info.requestMethod().data().decode('utf-8')
+        method = info.requestMethod().data().decode("utf-8")
         resource_type = info.resourceType()
 
 
@@ -99,13 +100,19 @@ class CustomWebEnginePage(QWebEnginePage):
             if real_path:
                 self.setUrl(QUrl.fromLocalFile(real_path))
             else:
-                print(f"Unknown cedzee:// path: {url.toString()}. Loading home.", file=sys.stderr)
+                print(
+                    f"Unknown cedzee:// path: {url.toString()}. Loading home.",
+                    file=sys.stderr,
+                )
                 self.setUrl(QUrl.fromLocalFile(home_url))
             return False
         return super().acceptNavigationRequest(url, nav_type, isMainFrame)
 
     def certificateError(self, certificate_error: QWebEngineCertificateError):
-        print(f"Erreur de certificat détectée pour {certificate_error.url().toString()}: {certificate_error.errorDescription()}", file=sys.stderr)
+        print(
+            f"Erreur de certificat détectée pour {certificate_error.url().toString()}: {certificate_error.errorDescription()}",
+            file=sys.stderr,
+        )
         return True
 
 
@@ -136,7 +143,9 @@ class BrowserWindow(QMainWindow):
         self.profile.setUrlRequestInterceptor(self.request_logger)
 
         try:
-            with open(os.path.abspath(f"{directory}/theme/theme.css"), "r", encoding="utf-8") as f:
+            with open(
+                os.path.abspath(f"{directory}/theme/theme.css"), "r", encoding="utf-8"
+            ) as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
             print("theme.css not found.")
@@ -144,10 +153,9 @@ class BrowserWindow(QMainWindow):
         self.browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, self.browser, browser_window=self)
         self.browser.setPage(page)
-        
-        self._attach_webchannel(self.browser) 
 
-        
+        self._attach_webchannel(self.browser)
+
         self.browser.titleChanged.connect(self.update_window_title)
         self.browser.loadFinished.connect(self.handle_load_finished)
 
@@ -212,9 +220,15 @@ class BrowserWindow(QMainWindow):
     def handle_load_finished(self, ok: bool):
         if not ok:
             current_url = self.browser.url()
-            if not current_url.isLocalFile() and current_url.scheme() in ("http", "https"):
+            if not current_url.isLocalFile() and current_url.scheme() in (
+                "http",
+                "https",
+            ):
                 if not BrowserWindow.is_internet_available():
-                    print("Pas de connexion Internet détectée. Affichage page offline.", file=sys.stderr)
+                    print(
+                        "Pas de connexion Internet détectée. Affichage page offline.",
+                        file=sys.stderr,
+                    )
                     self.browser.setUrl(QUrl.fromLocalFile(offline_url))
         else:
             self.save_to_history(self.browser.url().toString(), self.browser.title())
@@ -228,7 +242,11 @@ class BrowserWindow(QMainWindow):
             os.makedirs(history_dir)
 
     def save_to_history(self, url_str: str, title: str):
-        if url_str.startswith("http://") or url_str.startswith("https://") or url_str.startswith("file:///"):
+        if (
+            url_str.startswith("http://")
+            or url_str.startswith("https://")
+            or url_str.startswith("file:///")
+        ):
             if not title or title.startswith("http") or title == "Chargement...":
                 return
 
@@ -286,20 +304,20 @@ def start_app(url: str):
 
     html_content = ""
     is_local_file = url.startswith("file://")
-    
+
     if is_local_file:
         parsed = urlparse(url)
         path = unquote(parsed.path)
 
-        if sys.platform.startswith('win'):
-            if path.startswith('/') and len(path) > 2 and path[2] == ':':
+        if sys.platform.startswith("win"):
+            if path.startswith("/") and len(path) > 2 and path[2] == ":":
                 path = path[1:]
 
         path_obj = Path(path)
         if not path_obj.exists():
             raise FileNotFoundError(f"Fichier introuvable : {path_obj}")
-        
-        with open(path_obj, 'r', encoding='utf-8') as f:
+
+        with open(path_obj, "r", encoding="utf-8") as f:
             html_content = f.read()
     else:
         try:
@@ -312,25 +330,29 @@ def start_app(url: str):
             html_content = ""
 
     if html_content:
-        soup = BeautifulSoup(html_content, 'html.parser')
-        horizontal = soup.find('meta', attrs={'cedzeeapp_horizontal': True})
-        vertical = soup.find('meta', attrs={'cedzeeapp_vertical': True})
-        title = soup.find('meta', attrs={'cedzeeapp_title': True})
+        soup = BeautifulSoup(html_content, "html.parser")
+        horizontal = soup.find("meta", attrs={"cedzeeapp_horizontal": True})
+        vertical = soup.find("meta", attrs={"cedzeeapp_vertical": True})
+        title = soup.find("meta", attrs={"cedzeeapp_title": True})
 
         if horizontal:
             try:
-                Window_width = int(horizontal['cedzeeapp_horizontal'])
+                Window_width = int(horizontal["cedzeeapp_horizontal"])
             except ValueError:
-                print(f"Invalid cedzeeapp_horizontal value: {horizontal['cedzeeapp_horizontal']}")
+                print(
+                    f"Invalid cedzeeapp_horizontal value: {horizontal['cedzeeapp_horizontal']}"
+                )
 
         if vertical:
             try:
-                Window_height = int(vertical['cedzeeapp_vertical'])
+                Window_height = int(vertical["cedzeeapp_vertical"])
             except ValueError:
-                print(f"Invalid cedzeeapp_vertical value: {vertical['cedzeeapp_vertical']}")
+                print(
+                    f"Invalid cedzeeapp_vertical value: {vertical['cedzeeapp_vertical']}"
+                )
 
         if title:
-            Window_Title = title['cedzeeapp_title']
+            Window_Title = title["cedzeeapp_title"]
 
     home_url = url
 
@@ -339,11 +361,12 @@ def start_app(url: str):
         window.browser.setHtml(html_content, QUrl(url))
     else:
         window.browser.setUrl(QUrl(url))
-    
+
     window.show()
 
     if not QApplication.instance().startingUp():
         app.exec()
+
 
 if __name__ == "__main__":
     initial_load_url = home_url
@@ -353,6 +376,8 @@ if __name__ == "__main__":
             initial_load_url = QUrl.fromLocalFile(os.path.abspath(arg_path)).toString()
             print(f"Tentative de chargement du fichier local: {initial_load_url}")
         else:
-            print(f"L'argument fourni '{arg_path}' n'est pas un chemin de fichier valide. Chargement de l'URL d'accueil par défaut.")
+            print(
+                f"L'argument fourni '{arg_path}' n'est pas un chemin de fichier valide. Chargement de l'URL d'accueil par défaut."
+            )
 
     start_app(initial_load_url)
