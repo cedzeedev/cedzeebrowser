@@ -147,15 +147,15 @@ class BrowserWindow(QMainWindow):
         
         self._attach_webchannel(self.browser) 
 
-        if Window_Title == "Cedzee Browser":
-            self.browser.titleChanged.connect(self.update_window_title)
+        
+        self.browser.titleChanged.connect(self.update_window_title)
         self.browser.loadFinished.connect(self.handle_load_finished)
 
         self.main_layout.addWidget(self.browser)
 
-        self.menu = QToolBar("Menu de navigation")
-        self.addToolBar(self.menu)
-        self.add_navigation_buttons()
+        # self.menu = QToolBar("Menu de navigation")
+        # self.addToolBar(self.menu)
+        # self.add_navigation_buttons()
 
         self.load_history()
 
@@ -168,35 +168,35 @@ class BrowserWindow(QMainWindow):
             lambda k, v: print(f"Setting '{k}' mis à jour en '{v}'")
         )
 
-    def add_navigation_buttons(self):
-        icons = {
-            "back": "arrow_back.png",
-            "forward": "arrow_forward.png",
-            "refresh": "refresh.png",
-            "home": "home.png",
-        }
+    # def add_navigation_buttons(self):
+    #     icons = {
+    #         "back": "arrow_back.png",
+    #         "forward": "arrow_forward.png",
+    #         "refresh": "refresh.png",
+    #         "home": "home.png",
+    #     }
 
-        for name, fn in [
-            ("home", self.go_home),
-            ("refresh", lambda: self.browser.reload()),
-        ]:
-            btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
-            btn.setToolTip(name.capitalize())
-            btn.triggered.connect(fn)
-            self.menu.addAction(btn)
+    #     for name, fn in [
+    #         ("home", self.go_home),
+    #         ("refresh", lambda: self.browser.reload()),
+    #     ]:
+    #         btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
+    #         btn.setToolTip(name.capitalize())
+    #         btn.triggered.connect(fn)
+    #         self.menu.addAction(btn)
 
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        self.menu.addWidget(spacer)
+    #     spacer = QWidget()
+    #     spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+    #     self.menu.addWidget(spacer)
 
-        for name, fn in [
-            ("back", lambda: self.browser.back()),
-            ("forward", lambda: self.browser.forward()),
-        ]:
-            btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
-            btn.setToolTip(name.capitalize())
-            btn.triggered.connect(fn)
-            self.menu.addAction(btn)
+    #     for name, fn in [
+    #         ("back", lambda: self.browser.back()),
+    #         ("forward", lambda: self.browser.forward()),
+    #     ]:
+    #         btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
+    #         btn.setToolTip(name.capitalize())
+    #         btn.triggered.connect(fn)
+    #         self.menu.addAction(btn)
 
     def go_home(self):
         self.browser.setUrl(QUrl(home_url))
@@ -220,7 +220,7 @@ class BrowserWindow(QMainWindow):
             self.save_to_history(self.browser.url().toString(), self.browser.title())
 
     def update_window_title(self, title):
-        self.setWindowTitle(f"CEDZEE Browser - {title}")
+        self.setWindowTitle(title)
 
     def ensure_history_file(self):
         history_dir = os.path.join(directory, "resources", "config")
