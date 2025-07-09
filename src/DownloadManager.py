@@ -218,16 +218,16 @@ class DownloadManager(QWidget):
         self.main_layout.addWidget(self.list_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
-
         try:
-            directory = os.path.dirname(os.path.abspath(__file__))
             css_path = os.path.abspath(f"{directory}/theme/theme.css")
+            print(f"Tentative de chargement du CSS depuis : {css_path}")
             if os.path.exists(css_path):
                 with open(css_path, "r", encoding="utf-8") as f:
                     self.setStyleSheet(f.read())
+            else:
+                print(f"Fichier CSS non trouvé : {css_path}")
         except Exception as e:
             print(f"Impossible de charger le thème pour DownloadManager: {e}")
-
         os.makedirs(os.path.dirname(self.DOWNLOAD_HISTORY_FILE), exist_ok=True)
         self.load_download_history()
 
