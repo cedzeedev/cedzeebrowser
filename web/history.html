@@ -236,7 +236,7 @@
         const mainTitle = document.querySelector('h1');
         const themeToggle = document.getElementById('theme-toggle');
 
-        fetch('../resources/config/history.csv')
+        fetch('../resources/saves/history.csv')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Le fichier history.csv est introuvable (HTTP ${response.status})`);

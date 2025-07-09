@@ -203,19 +203,15 @@ QMenu::item:selected {
     background-color: #007acc;
 }
 
-/* Specific styling for QToolButton within QToolBar (for actions) */
 QToolBar QToolButton {
     background-color: #4a4a4a;
-    /* Slightly lighter background for better visibility */
     border: 1px solid #666666;
     border-radius: 5px;
     padding: 5px 10px;
     margin: 2px;
     color: #ffffff;
     font-weight: bold;
-    /* Make text bolder */
     font-size: 16px;
-    /* Increase font size */
 }
 
 QToolBar QToolButton:hover {
@@ -239,4 +235,57 @@ QFrame#moreMenu QPushButton {
 
 QFrame#moreMenu QPushButton:hover {
     background-color: #505050;
+}
+
+#downloadListWidget {
+    background-color: #505050;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+    color: #ffffff;
+}
+
+#downloadListWidget::item {
+    background-color: rgb(69, 69, 69);
+    border-radius: 5px;
+    padding: 8px;
+    margin-bottom: 5px;
+    color: #ffffff;
+    border-bottom: 1px solid #444;
+}
+
+#downloadListWidget::item:hover {
+    background-color: #363636;
+}
+
+#Button {
+    padding: 15px 25px;
+    background-color: #3a3a3a;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+#Button:hover {
+    background-color: #505050;
+}
+
+#Button:pressed {
+    background-color: #2a2a2a;
+}
+
+QLabel#fileName,
+QLabel#statusLabel {
+    color: #ffffff;
+}
+
+QPushButton#Button {
+    color: #ffffff;
+}
+
+QProgressBar {
+    color: #ffffff;
+    text-align: center;
 }
