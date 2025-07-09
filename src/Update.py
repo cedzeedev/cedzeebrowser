@@ -7,7 +7,8 @@ from pathlib import Path
 import requests
 import subprocess
 
-directory = os.path.dirname(__file__)
+directory1 = os.path.dirname(os.path.abspath(__file__))
+directory = os.path.dirname(directory1)
 path_dir = Path(directory)
 src_dir = os.path.join(directory, "update_files")
 dst_dir = directory
@@ -26,8 +27,14 @@ FOLDERS_TO_REMOVE = ["scripts", "web", "src", "theme", "offline"]
 
 
 def update_all():
+    version_file = os.path.join(dst_dir, "version.json")
+    if os.path.exists(version_file):
+        os.remove(version_file)
+        print(f"[update] Supprimé : {version_file}")
+
     if os.path.isdir(src_dir):
         shutil.rmtree(src_dir, ignore_errors=True)
+
     porcelain.clone(repo_url, src_dir)
 
     if not os.path.isdir(src_dir):
