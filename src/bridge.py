@@ -30,7 +30,6 @@ class CedzeeBridge(QObject):
                 self._config = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             self._config = {}
-            self._save_config()
 
     def _save_config(self):
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
