@@ -9,6 +9,7 @@ from AppEngine import start_app
 import requests
 from bridge import CedzeeBridge
 from Update import update_all
+from DownloadManager import DownloadManager
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot, QRect, QPoint
 from PyQt6.QtGui import QAction, QIcon
@@ -170,7 +171,9 @@ class BrowserWindow(QMainWindow):
 
         self.setWindowTitle("CEDZEE Browser")
         self.resize(1200, 800)
-        self.move(300, 50)
+        self.center()
+
+        self.download_manager = DownloadManager()
 
         self.main_widget = QWidget()
         self.setCentralWidget(self.main_widget)
@@ -237,6 +240,7 @@ class BrowserWindow(QMainWindow):
             ("Ctrl+R", lambda: self.current_browser().reload()),
             ("F5",     lambda: self.current_browser().reload()),
             ("Ctrl+H", self.open_history),
+            ("Ctrl+J", self.download_manager.show),
             ("Ctrl+B", self.toggle_sidebar),
         ]:
             a = QAction(self)
@@ -256,6 +260,12 @@ class BrowserWindow(QMainWindow):
         b = self.current_browser()
         if b:
             self.update_urlbar(b.url(), b)
+    def center(self):
+        screen_geometry = self.screen().geometry()
+        window_geometry = self.frameGeometry()
+        center_point = screen_geometry.center()
+        window_geometry.moveCenter(center_point)
+        self.move(window_geometry.topLeft())
 
     def add_navigation_buttons(self):
         self.fav_dir = os.path.join(directory, "resources", "saves")
@@ -325,12 +335,19 @@ class BrowserWindow(QMainWindow):
         menu_items = [
             ("history", "Historique", self.open_history),
             ("favorites", "Favoris", self.open_favorites),
+            ("download", "Téléchargements", self.download_manager.show),
             ("dev", "Outils de développement", self.open_devtools),
             ("open_in_app", "Ouvrir dans une application", self.open_current_url_in_app),
         ]
         
         for icon, text, func in menu_items:
-            btn = QPushButton(QIcon(f"{icons_path}/{icon}.png"), f" {text}")
+            icon_path = f"{icons_path}/{icon}.png"
+            if not os.path.exists(icon_path):
+                print(f"Icône manquante : {icon_path}")
+                btn = QPushButton(f" {text}")
+            else:
+                 btn = QPushButton(QIcon(icon_path), f" {text}")
+
             btn.clicked.connect(lambda _, f=func: (f(), self.toggle_more_menu()))
             btn.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
             menu_layout.addWidget(btn)
@@ -592,7 +609,7 @@ class BrowserWindow(QMainWindow):
             self.current_browser().setUrl(url_to_load)
 
     def ensure_history_file(self):
-        history_dir = os.path.join(directory, "resources", "config")
+        history_dir = os.path.join(directory, "resources", "saves")
         if not os.path.exists(history_dir):
             os.makedirs(history_dir)
 
@@ -601,7 +618,7 @@ class BrowserWindow(QMainWindow):
             if not title or title.startswith("http") or title == "Chargement...":
                 return
             
-            history_path = os.path.join(directory, "resources", "config", "history.csv")
+            history_path = os.path.join(directory, "resources", "saves", "history.csv")
             try:
                 with open(history_path, mode="a", newline="", encoding="utf-8") as f:
                     writer = csv.writer(f)
@@ -614,7 +631,7 @@ class BrowserWindow(QMainWindow):
     def load_history(self):
         try:
             with open(
-                f"{directory}/resources/config/history.csv", mode="r", encoding="utf-8"
+                f"{directory}/resources/saves/history.csv", mode="r", encoding="utf-8"
             ) as f:
                 reader = csv.reader(f)
                 self.history = [row[1] for row in reader if len(row) > 1]
@@ -677,19 +694,21 @@ class BrowserWindow(QMainWindow):
             self.close_tab(idx)
 
     def on_downloadRequested(self, download_item: QWebEngineDownloadRequest):
-        suggested = download_item.suggestedFileName() or "downloaded_file"
-        path, _ = QFileDialog.getSaveFileName(self, "Enregistrer le fichier", suggested)
-        if not path:
-            download_item.cancel()
-            return
-        download_item.setDownloadDirectory(os.path.dirname(path))
-        download_item.setDownloadFileName(os.path.basename(path))
-        download_item.accept()
+            suggested = download_item.suggestedFileName() or "downloaded_file"
+            downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+            os.makedirs(downloads_path, exist_ok=True)
+            initial_save_path = os.path.join(downloads_path, os.path.basename(suggested))
+            
+            path, _ = QFileDialog.getSaveFileName(self, "Enregistrer le fichier", initial_save_path)
 
-        def done(state):
-            if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
-                print(f"Téléchargement terminé : {path}")
-        download_item.stateChanged.connect(done)
+            if not path:
+                download_item.cancel()
+                return
+            
+            download_item.setDownloadFileName(path) 
+            
+            self.download_manager.add_download(download_item)
+            download_item.accept()
 
     def open_current_url_in_app(self):
         current_browser_widget = self.current_browser()

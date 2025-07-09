@@ -1,6 +1,5 @@
 ## ✅ Task List importants
 
-- [ ] système de téléchargements amélioré 
 - [ ] paramètres
 - [ ] Besoin d'un logo
 
@@ -21,3 +20,4 @@
 - [X] Afficher la date et l'heure dans l'historique (slohwnix)
 - [X] Ouvrir un onglet dans une application (slohwnix)
 - [X] nouveaux système de mise à jour (slohwnix)
+- [X] système de téléchargements amélioré (slohwnix)
