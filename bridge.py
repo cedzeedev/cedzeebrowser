@@ -97,6 +97,14 @@ class CedzeeBridge(QObject):
                 except Exception as e:
                     print(f"❌ Erreur lors de la mise à jour : {e}")
 
+    @pyqtSlot(result=str)
+    def get_mode(self) -> str:
+        if os.path.dirname(__file__).endswith("_internal"):
+            return "app"
+        else:
+            return "py"
+        
+
     @pyqtSlot(result='QVariantMap')
     def getAll(self) -> dict:
         return self._config

@@ -18,6 +18,7 @@ lib/
 min/
 tmp/
 build_win/
+build/
 
 # ENV
 
