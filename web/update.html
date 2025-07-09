@@ -5,32 +5,41 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../theme/theme.css" />
-    <title>Update</title>
+    <title>Mise à jour</title>
+    <style>
+        .cedzee-button-contributors:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 
 <body>
 
     <h3 id="update-title">Chargement de la mise à jour...</h3>
+    <p id="info">Le navigateur redémarrera après la mise à jour et tous vos onglets seront fermés.</p>
     <p id="version-info"></p>
     <ul id="change-list"></ul>
 
-    <button class="cedzee-button-contributors" id="update-button">Mettre à jour</button>
+    <button class="cedzee-button-contributors" id="update-button" style="display: none;">Mettre à jour</button>
 
     <script>
         const title = document.getElementById("update-title");
         const versionInfo = document.getElementById("version-info");
         const changeList = document.getElementById("change-list");
         const updateButton = document.getElementById("update-button");
+        const infoText = document.getElementById("info");
 
         let cedzeebrowser = null;
+        let mode = "default";
 
         Promise.all([
             fetch("../version.json").then(res => {
-                if (!res.ok) throw new Error("Erreur chargement version locale");
+                if (!res.ok) throw new Error("Erreur lors du chargement de la version locale.");
                 return res.json();
             }),
             fetch("../version_online.json").then(res => {
-                if (!res.ok) throw new Error("Erreur chargement version en ligne");
+                if (!res.ok) throw new Error("Erreur lors du chargement de la version en ligne.");
                 return res.json();
             })
         ])
@@ -49,10 +58,8 @@
                     });
 
                     updateButton.style.display = "inline-block";
-
                 } else {
                     title.textContent = "Votre version est à jour.";
-                    updateButton.style.display = "none";
                 }
             })
             .catch(error => {
@@ -60,14 +67,32 @@
                 console.error("Erreur :", error);
             });
 
+        // Chargement de la WebChannel
         const script = document.createElement('script');
         script.src = 'qrc:///qtwebchannel/qwebchannel.js';
         script.onload = () => {
             new QWebChannel(qt.webChannelTransport, function (channel) {
                 cedzeebrowser = channel.objects.cedzeebrowser;
 
+                if (cedzeebrowser?.get_mode) {
+                    cedzeebrowser.get_mode().then(m => {
+                        mode = m;
+                        if (mode === "app") {
+                            updateButton.title = "En mode application, vous devez télécharger la mise à jour vous-même";
+                            updateButton.textContent = "Aller sur GitHub";
+                            infoText.textContent = "Vous devrez installer la mise à jour manuellement, car vous êtes en mode application.";
+                        }
+                    }).catch(err => {
+                        console.error("Erreur get_mode :", err);
+                    });
+                } else {
+                    console.log("cedzeebrowser.get_mode non disponible");
+                }
+
                 updateButton.addEventListener("click", () => {
-                    if (cedzeebrowser && cedzeebrowser.update) {
+                    if (mode === "app") {
+                        window.open("https://github.com/cedzeedev/cedzeebrowser", "_blank");
+                    } else if (cedzeebrowser?.update) {
                         cedzeebrowser.update();
                     } else {
                         console.error("cedzeebrowser.update non disponible");
