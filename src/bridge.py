@@ -12,9 +12,9 @@ except ImportError:
     )
     requests = None
 
-CONFIG_FILE = os.path.join(os.path.dirname(__file__), "resources", "config.json")
 directory1 = os.path.dirname(os.path.abspath(__file__))
 directory = os.path.dirname(directory1)
+CONFIG_FILE = f"{directory}/resources/config.json"
 
 
 class CedzeeBridge(QObject):
@@ -30,6 +30,7 @@ class CedzeeBridge(QObject):
                 self._config = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             self._config = {}
+            self._save_config()
 
     def _save_config(self):
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
