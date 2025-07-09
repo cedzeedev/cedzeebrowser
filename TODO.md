@@ -6,6 +6,14 @@
 ## ✅ Task List optionnels
 
 - [ ] [Sélection de thèmes](https://discord.com/channels/1213892868708503604/1213894739875725383/1391050183449514124) (Repo github avec `theme.cedzeetheme` au format json et `theme.css`)
+- [ ] Finaliser les cedapps:
+```
+MAXIMIZEBUTTON et MINIMIZEBUTTON
+CAPTION // affichage de la barre de titre
+SYSMENU // affichage des boutons réduire / fermer
+SHOWINTASKBAR // Affichage du programme dans la barre des tâches
+WINDOWSTATE // Réduit / Plein écran (mode F11) / normal
+```
 
 ## En cours : 
 
