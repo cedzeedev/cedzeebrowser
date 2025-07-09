@@ -1,7 +1,7 @@
 import json
 import os
 import base64
-import src.Update
+from src.Update import update_all
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QVariant
 
 try:
@@ -91,7 +91,7 @@ class CedzeeBridge(QObject):
     @pyqtSlot()
     def update(self):
         try:
-            Update.update_all()
+            update_all()
             print("✅ update_all() lancée avec succès")
         except Exception as e:
             print(f"❌ Erreur lors de la mise à jour : {e}")
