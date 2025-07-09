@@ -1,15 +1,21 @@
 import json
 import os
 import base64
-import Update
+import src.Update
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QVariant
+
 try:
     import requests
 except ImportError:
-    print("error: requests library not installed. Please install it using 'pip install requests'.")
+    print(
+        "error: requests library not installed. Please install it using 'pip install requests'."
+    )
     requests = None
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "resources", "config.json")
+directory1 = os.path.dirname(os.path.abspath(__file__))
+directory = os.path.dirname(directory1)
+
 
 class CedzeeBridge(QObject):
     settingChanged = pyqtSignal(str, str)
@@ -41,32 +47,27 @@ class CedzeeBridge(QObject):
 
     @pyqtSlot(str, "QVariantMap", result="QVariantMap")
     def fetchUrl(self, url: str, init: dict) -> dict:
-        method = init.get('method', 'GET').upper()
-        headers = init.get('headers', {}) or {}
-        body = init.get('body', None)
-        timeout = init.get('timeout', 10)
+        method = init.get("method", "GET").upper()
+        headers = init.get("headers", {}) or {}
+        body = init.get("body", None)
+        timeout = init.get("timeout", 10)
 
         try:
             response = requests.request(
-                method,
-                url,
-                headers=headers,
-                data=body,
-                timeout=timeout,
-                stream=True
+                method, url, headers=headers, data=body, timeout=timeout, stream=True
             )
             status = response.status_code
             status_text = response.reason
             resp_headers = dict(response.headers)
 
-            content_type = response.headers.get('Content-Type', '')
+            content_type = response.headers.get("Content-Type", "")
             # Gestion des images : renvoyer en base64
-            if content_type.startswith('image/'):
+            if content_type.startswith("image/"):
                 data = response.content
-                b64 = base64.b64encode(data).decode('utf-8')
+                b64 = base64.b64encode(data).decode("utf-8")
                 data_url = f"data:{content_type};base64,{b64}"
                 resp_body = data_url
-            elif 'application/json' in content_type:
+            elif "application/json" in content_type:
                 try:
                     resp_body = response.json()
                 except ValueError:
@@ -75,36 +76,33 @@ class CedzeeBridge(QObject):
                 resp_body = response.text
 
             return {
-                'status': status,
-                'statusText': status_text,
-                'headers': resp_headers,
-                'body': resp_body
+                "status": status,
+                "statusText": status_text,
+                "headers": resp_headers,
+                "body": resp_body,
             }
         except requests.exceptions.RequestException as e:
             err = str(e)
             code = None
-            if hasattr(e, 'response') and e.response is not None:
+            if hasattr(e, "response") and e.response is not None:
                 code = e.response.status_code
-            return {
-                'error': err,
-                'status': code
-            }
+            return {"error": err, "status": code}
+
     @pyqtSlot()
     def update(self):
-                try:
-                    Update.update_all()  
-                    print("✅ update_all() lancée avec succès")
-                except Exception as e:
-                    print(f"❌ Erreur lors de la mise à jour : {e}")
+        try:
+            Update.update_all()
+            print("✅ update_all() lancée avec succès")
+        except Exception as e:
+            print(f"❌ Erreur lors de la mise à jour : {e}")
 
     @pyqtSlot(result=str)
     def get_mode(self) -> str:
-        if os.path.dirname(__file__).endswith("_internal"):
+        if directory.endswith("_internal"):
             return "app"
         else:
             return "py"
-        
 
-    @pyqtSlot(result='QVariantMap')
+    @pyqtSlot(result="QVariantMap")
     def getAll(self) -> dict:
         return self._config
