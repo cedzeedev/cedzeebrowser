@@ -84,16 +84,23 @@ version_json_url = "https://raw.githubusercontent.com/cedzeedev/cedzeebrowser/re
 
 def check_first_run():
     if not os.path.exists(CONFIG_FILE):
-        config = {"first_run": True}
-        with open(CONFIG_FILE, "w") as f:
+        config = {"first_run": False}
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=4)
         return True
     else:
-        with open(CONFIG_FILE, "r") as f:
-            config = json.load(f)
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                config = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            config = {"first_run": False}
+            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=4)
+            return True
+
         if config.get("first_run", True):
             config["first_run"] = False
-            with open(CONFIG_FILE, "w") as f:
+            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=4)
             return True
         else:
