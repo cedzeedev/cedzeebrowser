@@ -23,7 +23,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build .exe
-        run: python scripts/build.py --target exe
+        run: python scripts/build.py
 
       - name: Upload .exe
         uses: actions/upload-artifact@v4
@@ -54,19 +54,13 @@ jobs:
              pip install pyinstaller
   
          - name: Build .deb
-           run: python scripts/build.py --target deb
-  
-         - name: Build .rpm
-           run: python scripts/build.py --target rpm
-  
-         - name: Build .snap
-           run: python scripts/build.py --target snap
+           run: python scripts/build.py
   
          - name: Upload Linux packages
            uses: actions/upload-artifact@v4
            with:
              name: app-linux-packages
-             path: build_win
+             path: build_win/main
 
           
   build-macos:
@@ -91,7 +85,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build .dmg
-        run: python scripts/build.py --target dmg
+        run: python scripts/build.py
 
       - name: Upload .dmg
         uses: actions/upload-artifact@v4
