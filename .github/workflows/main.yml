@@ -30,47 +30,48 @@ jobs:
         with:
           name: app-windows
           path: build_win/main
-
   build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+       runs-on: ubuntu-latest
+       steps:
+         - name: Checkout code
+           uses: actions/checkout@v4
+  
+         - name: Set up Python
+           uses: actions/setup-python@v5
+           with:
+             python-version: '3.11'
+  
+         - name: Install build tools
+           run: |
+             sudo apt update
+             sudo apt install -y python3-pip ruby ruby-dev rpm snapd
+             sudo gem install --no-document fpm
+             sudo snap install snapcraft --classic
+  
+         - name: Install Python dependencies
+           run: |
+             pip install -r requirements.txt
+             pip install pyinstaller
+  
+         - name: Build .deb
+           run: python scripts/build.py --target deb
+  
+         - name: Build .rpm
+           run: python scripts/build.py --target rpm
+  
+         - name: Build .snap
+           run: python scripts/build.py --target snap
+  
+         - name: Upload Linux packages
+           uses: actions/upload-artifact@v4
+           with:
+             name: app-linux-packages
+             path: |
+               *.deb
+               *.rpm
+               *.snap
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install build tools
-        run: |
-          sudo apt update
-          sudo apt install -y python3-pip ruby ruby-dev rpm rpm-build snapcraft
-          sudo gem install --no-document fpm
-
-      - name: Install Python dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pyinstaller
-
-      - name: Build .deb
-        run: python scripts/build.py --target deb
-
-      - name: Build .rpm
-        run: python scripts/build.py --target rpm
-
-      - name: Build .snap
-        run: python scripts/build.py --target snap
-
-      - name: Upload Linux packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-linux-packages
-          path: |
-            *.deb
-            *.rpm
-            *.snap
-
+          
   build-macos:
     runs-on: macos-latest
     steps:
