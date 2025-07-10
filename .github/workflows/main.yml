@@ -1,4 +1,4 @@
-name: Build on All Platforms
+name: Build and Package All OS
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-windows-exe
-          path: build_win/*.exe
+          path: build_win/**
 
   build-linux:
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt update
-          sudo apt install -y python3-pip ruby ruby-dev snapcraft rpm
+          sudo apt install -y python3-pip ruby ruby-dev rpm rpm-build snapcraft
           sudo gem install --no-document fpm
 
       - name: Install Python dependencies
@@ -83,7 +83,9 @@ jobs:
           python-version: '3.11'
 
       - name: Install dmg tool
-        run: brew install --cask create-dmg
+        run: |
+          brew install node
+          npm install -g create-dmg
 
       - name: Install dependencies
         run: |
