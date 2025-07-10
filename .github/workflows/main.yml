@@ -2,14 +2,12 @@ name: Build on All Platforms
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   build-windows:
     runs-on: windows-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,23 +18,21 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
-        
-      - name: Install pyinstaller
-        run: pip install pyinstaller
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
 
-      - name: Run build script
-        run: python scripts/build.py
+      - name: Build .exe
+        run: python scripts/build.py --target exe
 
-      - name: Upload build
+      - name: Upload .exe
         uses: actions/upload-artifact@v4
         with:
-          name: build_win_main
-          path: build_win/main
+          name: app-windows-exe
+          path: build_win/*.exe
 
   build-linux:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,24 +42,37 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install build tools
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip ruby ruby-dev snapcraft rpm
+          sudo gem install --no-document fpm
 
-      - name: Install pyinstaller
-        run: pip install pyinstaller
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
 
-      - name: Run build script
-        run: python scripts/build.py
+      - name: Build .deb
+        run: python scripts/build.py --target deb
 
-      - name: Upload build
+      - name: Build .rpm
+        run: python scripts/build.py --target rpm
+
+      - name: Build .snap
+        run: python scripts/build.py --target snap
+
+      - name: Upload Linux packages
         uses: actions/upload-artifact@v4
         with:
-          name: build_linux_main
-          path: build_linux/main
+          name: app-linux-packages
+          path: |
+            *.deb
+            *.rpm
+            *.snap
 
   build-macos:
     runs-on: macos-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -73,17 +82,19 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install dmg tool
+        run: brew install --cask create-dmg
+
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
 
-      - name: Install pyinstaller
-        run: pip install pyinstaller
+      - name: Build .dmg
+        run: python scripts/build.py --target dmg
 
-      - name: Run build script
-        run: python scripts/build.py
-
-      - name: Upload build
+      - name: Upload .dmg
         uses: actions/upload-artifact@v4
         with:
-          name: build_macos_main
-          path: build_macos/main
+          name: app-macos-dmg
+          path: dist/*.dmg
