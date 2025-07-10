@@ -28,7 +28,7 @@ jobs:
       - name: Upload .exe
         uses: actions/upload-artifact@v4
         with:
-          name: app-windows-exe
+          name: app-windows
           path: build_win/main
 
   build-linux:
@@ -98,5 +98,5 @@ jobs:
       - name: Upload .dmg
         uses: actions/upload-artifact@v4
         with:
-          name: app-macos-dmg
+          name: app-macos
           path: build_win/main
