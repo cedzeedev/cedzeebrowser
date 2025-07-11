@@ -16,8 +16,8 @@
 
 <body>
 
-    <h3 id="update-title">Chargement de la mise à jour...</h3>
-    <p id="info">Le navigateur s'éteindra après la mise à jour et tous vos onglets seront fermés.</p>
+    <h3 id="update-title">Initialisation…</h3>
+    <p id="info">Vérification du mode d’exécution…</p>
     <p id="version-info"></p>
     <ul id="change-list"></ul>
 
@@ -25,59 +25,74 @@
 
     <script>
         const title = document.getElementById("update-title");
+        const infoText = document.getElementById("info");
         const versionInfo = document.getElementById("version-info");
         const changeList = document.getElementById("change-list");
         const updateButton = document.getElementById("update-button");
-        const infoText = document.getElementById("info");
 
-        let cedzeebrowser = null;
+        function checkForUpdates() {
+            infoText.textContent = "Chargement de la mise à jour...";
+            Promise.all([
+                fetch("../version.json").then(res => {
+                    if (!res.ok) throw new Error("Erreur lors du chargement de la version locale.");
+                    return res.json();
+                }),
+                fetch("../version_online.json").then(res => {
+                    if (!res.ok) throw new Error("Erreur lors du chargement de la version en ligne.");
+                    return res.json();
+                })
+            ])
+                .then(([localData, onlineData]) => {
+                    const current = localData[0];
+                    const latest = onlineData[0];
 
-        Promise.all([
-            fetch("../version.json").then(res => {
-                if (!res.ok) throw new Error("Erreur lors du chargement de la version locale.");
-                return res.json();
-            }),
-            fetch("../version_online.json").then(res => {
-                if (!res.ok) throw new Error("Erreur lors du chargement de la version en ligne.");
-                return res.json();
-            })
-        ])
-            .then(([localData, onlineData]) => {
-                const current = localData[0];
-                const latest = onlineData[0];
+                    if (latest.version !== current.version) {
+                        title.textContent = "Une mise à jour est disponible !";
+                        versionInfo.textContent = `Nouvelle version : ${latest.version} (publiée le ${latest.date})`;
 
-                if (latest.version !== current.version) {
-                    title.textContent = "Une mise à jour est disponible !";
-                    versionInfo.textContent = `Nouvelle version : ${latest.version} (publiée le ${latest.date})`;
+                        latest.changes.forEach(change => {
+                            const li = document.createElement("li");
+                            li.textContent = change;
+                            changeList.appendChild(li);
+                        });
 
-                    latest.changes.forEach(change => {
-                        const li = document.createElement("li");
-                        li.textContent = change;
-                        changeList.appendChild(li);
-                    });
+                        updateButton.style.display = "inline-block";
+                    } else {
+                        title.textContent = "Votre version est à jour.";
+                        infoText.textContent = "";
+                    }
+                })
+                .catch(error => {
+                    title.textContent = "Impossible de vérifier les mises à jour.";
+                    infoText.textContent = "";
+                    console.error("Erreur :", error);
+                });
+        }
 
-                    updateButton.style.display = "inline-block";
-                } else {
-                    title.textContent = "Votre version est à jour.";
-                }
-            })
-            .catch(error => {
-                title.textContent = "Impossible de vérifier les mises à jour.";
-                console.error("Erreur :", error);
-            });
-
-        // Chargement de la WebChannel
         const script = document.createElement('script');
         script.src = 'qrc:///qtwebchannel/qwebchannel.js';
         script.onload = () => {
             new QWebChannel(qt.webChannelTransport, function (channel) {
-                cedzeebrowser = channel.objects.cedzeebrowser;
-
-                updateButton.addEventListener("click", () => {
-                    if (cedzeebrowser?.update) {
-                        cedzeebrowser.update();
+                const cedzeebrowser = channel.objects.cedzeebrowser;
+                cedzeebrowser.get_mode(function (mode) {
+                    if (mode === "app") {
+                        title.textContent = "Mise à jour non disponible en mode application.";
+                        infoText.textContent = "Vous utilisez la version empaquetée ; merci de passer par installer la mise à jour manuellement.";
+                        updateButton.disabled = true;
+                        updateButton.style.display = "none";
+                    } else if (mode === "py") {
+                        checkForUpdates();
+                        updateButton.addEventListener("click", () => {
+                            if (cedzeebrowser.update) {
+                                cedzeebrowser.update();
+                            } else {
+                                console.error("cedzeebrowser.update non disponible");
+                            }
+                        });
                     } else {
-                        console.error("cedzeebrowser.update non disponible");
+                        title.textContent = "Mode inconnu : impossible de vérifier la mise à jour.";
+                        infoText.textContent = "";
+                        console.warn("Mode non reconnu :", mode);
                     }
                 });
             });

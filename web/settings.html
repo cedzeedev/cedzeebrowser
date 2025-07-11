@@ -33,7 +33,6 @@
             margin-bottom: 15px;
         }
 
-        /* Styles pour la liste déroulante */
         #engineSelect {
             padding: 10px;
             border-radius: 5px;
@@ -46,7 +45,6 @@
             max-width: 300px;
         }
 
-        /* Styles pour les boutons (optionnel, pour cohérence) */
         button {
             padding: 10px 20px;
             background: #4a4a4a;
@@ -61,12 +59,17 @@
             margin-bottom: 15px;
         }
 
-        button:hover {
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
             background: #606060;
             transform: translateY(-1px);
         }
 
-        button:active {
+        button:active:not(:disabled) {
             transform: translateY(0);
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
         }
@@ -93,7 +96,6 @@
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Éléments du DOM
             const versionLabel = document.getElementById('label_actual_version');
             const updateBtn = document.getElementById('updateBtn');
             const selectElement = document.getElementById('engineSelect');
@@ -101,7 +103,6 @@
             const clearCacheBtn = document.getElementById('clearCacheBtn');
             const clearAllDataBtn = document.getElementById('clearAllDataBtn');
 
-            // Liste des moteurs de recherche
             const engines = [
                 'Google',
                 'Qwant Junior',
@@ -113,7 +114,6 @@
                 'Brave Search'
             ];
 
-            // Initialisation du <select>
             const defaultOption = document.createElement('option');
             defaultOption.value = "";
             defaultOption.textContent = "Choisissez un moteur...";
@@ -127,48 +127,44 @@
                 selectElement.appendChild(option);
             });
 
-            // Fonctions pour gérer le bouton de mise à jour
-            function setButtonToUpdate() {
-                updateBtn.textContent = 'Mettre à jour';
-                updateBtn.onclick = () => {
-                    window.open('cedzee://update', '_blank');
-                };
+            function setButtonToManualInstall() {
+                updateBtn.textContent = 'Mise à jour détectée – installez manuellement';
+                updateBtn.disabled = true;
+                updateBtn.onclick = null;
             }
+
             function setButtonToCheck() {
                 updateBtn.textContent = 'Vérifier';
-                updateBtn.onclick = () => {
-                    verifyNow();
-                };
+                updateBtn.disabled = false;
+                updateBtn.onclick = verifyNow;
             }
+
             function verifyNow() {
-                cedzeebrowser.VerifyUpdate((result) => {
+                window.cedzeebrowser.VerifyUpdate((result) => {
                     if (result === 'yes') {
-                        setButtonToUpdate();
+                        setButtonToManualInstall();
                     } else {
                         alert('Pas de mise à jour disponible.');
                     }
                 });
             }
 
-            // Ouverture du canal Qt pour communiquer avec C++
             new QWebChannel(qt.webChannelTransport, (channel) => {
                 window.cedzeebrowser = channel.objects.cedzeebrowser;
 
-                // Récupérer et afficher la version actuelle
                 cedzeebrowser.get_version((currentVersion) => {
-                    versionLabel.textContent = 'Vous avez actuellement la version : ' + currentVersion;
+                    versionLabel.textContent =
+                        'Vous avez actuellement la version : ' + currentVersion;
                 });
 
-                // Vérifier automatiquement si une maj est dispo
                 cedzeebrowser.VerifyUpdate((result) => {
                     if (result === 'yes') {
-                        setButtonToUpdate();
+                        setButtonToManualInstall();
                     } else {
                         setButtonToCheck();
                     }
                 });
 
-                // Gestion du moteur de recherche
                 cedzeebrowser.get('searchEngine', (current) => {
                     if (current) selectElement.value = current;
                 });
@@ -176,11 +172,10 @@
                     cedzeebrowser.set('searchEngine', selectElement.value);
                 });
 
-                // Boutons de données
                 clearCookiesBtn.addEventListener('click', () => cedzeebrowser.clearCookies());
                 clearCacheBtn.addEventListener('click', () => cedzeebrowser.clearCache());
                 clearAllDataBtn.addEventListener('click', () => {
-                    if (confirm("Voulez-vous vraiment effacer toutes les données de navigation (cookies, cache, etc.) ? Cela ne supprimera pas l'historique ou les favoris.")) {
+                    if (confirm("Voulez-vous vraiment effacer toutes les données de navigation (cookies, cache, etc.) ? Cela ne supprimera pas l'historique ou les favoris.")) {
                         cedzeebrowser.ClearAll();
                     }
                 });
