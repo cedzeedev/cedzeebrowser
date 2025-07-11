@@ -20,6 +20,8 @@ from PyQt6.QtCore import (
     pyqtSlot,
     QRect,
     QPoint,
+    qInstallMessageHandler,
+    QtMsgType,
 )
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWebEngineWidgets import QWebEngineView
@@ -50,6 +52,15 @@ from PyQt6.QtWidgets import (
 )
 
 
+def message_handler(mode, context, message):
+    if "QWindowsWindow::setGeometry" in message:
+        return
+    print(message, file=sys.stderr)
+
+
+qInstallMessageHandler(message_handler)
+
+
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--enable-gpu "
     "--enable-webgl "
@@ -77,6 +88,7 @@ game_url = os.path.abspath(f"{directory}/offline/game.html")
 welcome_url = os.path.abspath(f"{directory}/web/welcome.html")
 contributors_url = os.path.abspath(f"{directory}/web/contributors.html")
 favorites_url = os.path.abspath(f"{directory}/web/favorites.html")
+settings_url = os.path.abspath(f"{directory}/web/settings.html")
 CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
 
 version_json_url = "https://raw.githubusercontent.com/cedzeedev/cedzeebrowser/refs/heads/main/version.json"
@@ -170,6 +182,7 @@ class CustomWebEnginePage(QWebEnginePage):
                 "welcome": welcome_url,
                 "contributors": contributors_url,
                 "favorites": favorites_url,
+                "settings": settings_url,
             }
             real_path = mapping.get(target)
             if real_path:
@@ -181,11 +194,7 @@ class CustomWebEnginePage(QWebEnginePage):
         return super().acceptNavigationRequest(url, nav_type, isMainFrame)
 
     def certificateError(self, certificate_error: QWebEngineCertificateError):
-        print(
-            f"Erreur de certificat détectée pour {certificate_error.url().toString()}: {certificate_error.errorDescription()}",
-            file=sys.stderr,
-        )
-        return True
+        pass
 
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
         pass
@@ -226,6 +235,7 @@ class BrowserWindow(QMainWindow):
         self.menu = QToolBar("Menu de navigation")
         self.menu.setEnabled(True)
         self.menu.setVisible(True)
+        self.menu.setFixedHeight(50)
         self.menu.setAllowedAreas(
             Qt.ToolBarArea.TopToolBarArea | Qt.ToolBarArea.BottomToolBarArea
         )
@@ -252,7 +262,8 @@ class BrowserWindow(QMainWindow):
         self.request_logger = NetworkRequestLogger()
         self.profile.setUrlRequestInterceptor(self.request_logger)
         try:
-            with open(os.path.abspath(f"{directory}/theme/theme.css"), "r") as f:
+            css_path = os.path.abspath(f"{directory}/theme/theme.css")
+            with open(css_path, "r") as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
             print("theme.css not found.")
@@ -329,6 +340,7 @@ class BrowserWindow(QMainWindow):
             self.menu.addAction(btn)
 
         self.address_input = QLineEdit()
+        self.address_input.setMinimumWidth(200)
         self.address_input.returnPressed.connect(self.navigate_to_url)
         self.menu.addWidget(self.address_input)
 
@@ -372,12 +384,12 @@ class BrowserWindow(QMainWindow):
                 "Ouvrir dans une application",
                 self.open_current_url_in_app,
             ),
+            ("settings", "Paramètres", self.open_settings),
         ]
 
         for icon, text, func in menu_items:
             icon_path = f"{icons_path}/{icon}.png"
             if not os.path.exists(icon_path):
-                print(f"Icône manquante : {icon_path}")
                 btn = QPushButton(f" {text}")
             else:
                 btn = QPushButton(QIcon(icon_path), f" {text}")
@@ -436,11 +448,8 @@ class BrowserWindow(QMainWindow):
         existing = next((item for item in favs if item.get("url") == url), None)
         if existing:
             favs.remove(existing)
-            print(f"URL removed from favorites: {url}")
         else:
             favs.append({"url": url, "title": title})
-            print(f"URL added to favorites: {url}")
-
         with open(self.fav_file, "w", encoding="utf-8") as f:
             json.dump(favs, f, indent=4, ensure_ascii=False)
 
@@ -485,6 +494,8 @@ class BrowserWindow(QMainWindow):
     def _attach_webchannel(self, browser: QWebEngineView):
         channel = QWebChannel(self)
         bridge = CedzeeBridge(self)
+        bridge.set_web_profile(self.profile)
+        bridge.set_web_page(browser.page())
         channel.registerObject("cedzeebrowser", bridge)
         browser.page().setWebChannel(channel)
         bridge.settingChanged.connect(
@@ -543,15 +554,12 @@ class BrowserWindow(QMainWindow):
                     "welcome": welcome_url,
                     "contributors": contributors_url,
                     "favorites": favorites_url,
+                    "settings": settings_url,
                 }
                 file_path = mapping.get(target)
                 if file_path:
                     url_to_load_obj = QUrl.fromLocalFile(file_path)
                 else:
-                    print(
-                        f"Unknown cedzee:// path: {url_to_load}. Loading home.",
-                        file=sys.stderr,
-                    )
                     url_to_load_obj = QUrl.fromLocalFile(home_url)
             else:
                 url_to_load_obj = QUrl(url_to_load)
@@ -560,17 +568,9 @@ class BrowserWindow(QMainWindow):
         elif isinstance(url_to_load, QUrl):
             url_to_load_obj = url_to_load
         else:
-            print(
-                f"Invalid URL type for open_tab: {type(url_to_load)}. Expected str or QUrl.",
-                file=sys.stderr,
-            )
             return None
 
         if not url_to_load_obj.isValid():
-            print(
-                f"Invalid URL provided: {url_to_load_obj.toString()}. Loading offline page.",
-                file=sys.stderr,
-            )
             url_to_load_obj = QUrl.fromLocalFile(offline_url)
 
         browser = self._create_and_configure_browser_tab(url_to_load_obj)
@@ -605,10 +605,6 @@ class BrowserWindow(QMainWindow):
                 "https",
             ):
                 if not BrowserWindow.is_internet_available():
-                    print(
-                        "Pas de connexion Internet détectée. Affichage page offline.",
-                        file=sys.stderr,
-                    )
                     browser_instance.setUrl(QUrl.fromLocalFile(offline_url))
                 else:
                     pass
@@ -653,6 +649,7 @@ class BrowserWindow(QMainWindow):
             "cedzee://welcome": welcome_url,
             "cedzee://contributors": contributors_url,
             "cedzee://favorites": favorites_url,
+            "cedzee://settings": settings_url,
         }
 
         if text in cedzee_routes:
@@ -685,7 +682,7 @@ class BrowserWindow(QMainWindow):
                         [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), url_str, title]
                     )
             except Exception as e:
-                print(f"Erreur lors de l'écriture dans l'historique : {e}")
+                pass
 
     def load_history(self):
         try:
@@ -705,6 +702,9 @@ class BrowserWindow(QMainWindow):
     def open_favorites(self):
         self.open_tab(QUrl.fromLocalFile(favorites_url))
 
+    def open_settings(self):
+        self.open_tab(QUrl.fromLocalFile(settings_url))
+
     def update_urlbar(self, url: QUrl, browser_instance=None):
         if browser_instance != self.current_browser():
             return
@@ -718,6 +718,7 @@ class BrowserWindow(QMainWindow):
             QUrl.fromLocalFile(welcome_url).toString(): "cedzee://welcome",
             QUrl.fromLocalFile(contributors_url).toString(): "cedzee://contributors",
             QUrl.fromLocalFile(favorites_url).toString(): "cedzee://favorites",
+            QUrl.fromLocalFile(settings_url).toString(): "cedzee://settings",
         }
 
         current_url_str = url.toString()
@@ -775,14 +776,12 @@ class BrowserWindow(QMainWindow):
         current_browser_widget = self.current_browser()
         if current_browser_widget:
             current_url = current_browser_widget.url().toString()
-            print(f"Attempting to open URL in external app: {current_url}")
             try:
                 start_app(current_url)
-                print(f"Successfully called start_app for URL: {current_url}")
             except Exception as e:
-                print(f"Error calling AppEngine.start_app: {e}", file=sys.stderr)
+                pass
         else:
-            print("No active browser tab found to get URL from.", file=sys.stderr)
+            pass
 
 
 def path_to_uri(path):

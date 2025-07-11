@@ -220,7 +220,6 @@ class DownloadManager(QWidget):
         self.main_layout.setSpacing(0)
         try:
             css_path = os.path.abspath(f"{directory}/theme/theme.css")
-            print(f"Tentative de chargement du CSS depuis : {css_path}")
             if os.path.exists(css_path):
                 with open(css_path, "r", encoding="utf-8") as f:
                     self.setStyleSheet(f.read())

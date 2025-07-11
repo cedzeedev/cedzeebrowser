@@ -38,6 +38,17 @@ h3 {
     margin: 20px;
 }
 
+
+h2 {
+    font-size: max(15px, 5vmin);
+    /* WTF ?? */
+    background: rgb(255, 255, 255);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    margin: 20px;
+}
+
 p {
     color: white;
     margin: 10px;
@@ -45,10 +56,44 @@ p {
 }
 
 ul {
+    list-style-type: none;
     padding: 0;
+    width: 90%;
+    max-width: 800px;
+}
+
+li {
+    margin: 10px 0;
+    background: #3a3a3a;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+li:hover {
+    transform: translateY(-2px);
+    background-color: #505050;
+}
+
+button {
+    padding: 10px 20px;
+    background: #4a4a4a;
     color: white;
-    margin: 10px;
-    text-align: left;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background: #606060;
+    transform: scale(1.05);
 }
 
 form {
