@@ -1,6 +1,5 @@
 ## ✅ Task List importants
 
-- [ ] paramètres
 - [ ] Besoin d'un logo
 
 ## ✅ Task List optionnels
@@ -19,7 +18,7 @@ WINDOWSTATE // Réduit / Plein écran (mode F11) / normal
 
 - [ ] redesign (Leo62-glitch)
 - [ ] extension (AntoineLandrieux)
-- [ ] page de bienvenue pour premier démarrage (slohwnix)
+
 
 ## Fait : 
 - [X] favoris (slohwnix)
@@ -29,3 +28,5 @@ WINDOWSTATE // Réduit / Plein écran (mode F11) / normal
 - [X] Ouvrir un onglet dans une application (slohwnix)
 - [X] nouveaux système de mise à jour (slohwnix)
 - [X] système de téléchargements amélioré (slohwnix)
+- [X] paramètres
+- [X] page de bienvenue pour premier démarrage (slohwnix)

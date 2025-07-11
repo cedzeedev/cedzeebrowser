@@ -170,6 +170,8 @@ class BrowserWindow(QMainWindow):
     def _attach_webchannel(self, browser: QWebEngineView):
         channel = QWebChannel(self)
         bridge = CedzeeBridge(self)
+        bridge.set_web_profile(self.profile)
+        bridge.set_web_page(browser.page())
         channel.registerObject("cedzeebrowser", bridge)
         browser.page().setWebChannel(channel)
         bridge.settingChanged.connect(

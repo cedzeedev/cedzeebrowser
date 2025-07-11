@@ -1,15 +1,13 @@
-name: Build on Windows
+name: Build and Package All OS
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   build-windows:
     runs-on: windows-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,16 +18,77 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
-        
-      - name: Install pyinstaller
-        run:  pip install pyinstaller 
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
 
-      - name: Run build script
+      - name: Build .exe
         run: python scripts/build.py
 
-      - name: Upload build
+      - name: Upload .exe
         uses: actions/upload-artifact@v4
         with:
-          name: build_win_main
+          name: app-windows
+          path: build_win/main
+  build-linux:
+       runs-on: ubuntu-latest
+       steps:
+         - name: Checkout code
+           uses: actions/checkout@v4
+  
+         - name: Set up Python
+           uses: actions/setup-python@v5
+           with:
+             python-version: '3.11'
+  
+         - name: Install build tools
+           run: |
+             sudo apt update
+             sudo apt install -y python3-pip ruby ruby-dev rpm snapd
+             sudo gem install --no-document fpm
+             sudo snap install snapcraft --classic
+  
+         - name: Install Python dependencies
+           run: |
+             pip install -r requirements.txt
+             pip install pyinstaller
+  
+         - name: Build .deb
+           run: python scripts/build.py
+  
+         - name: Upload Linux packages
+           uses: actions/upload-artifact@v4
+           with:
+             name: app-linux-packages
+             path: build_win/main
+
+          
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dmg tool
+        run: |
+          brew install node
+          npm install -g create-dmg
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build .dmg
+        run: python scripts/build.py
+
+      - name: Upload .dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-macos
           path: build_win/main
