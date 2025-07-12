@@ -153,8 +153,6 @@ form input[type="submit"] {
     color: white;
 }
 
-
-
 .items a {
     color: inherit;
     text-decoration: none;
@@ -249,18 +247,16 @@ QMenu::item:selected {
 }
 
 QToolBar QToolButton {
-    background-color: #4a4a4a;
-    border: 1px solid #666666;
     border-radius: 5px;
     padding: 5px 10px;
     margin: 2px;
     color: #ffffff;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 10px;
 }
 
 QToolBar QToolButton:hover {
-    background-color: #606060;
+    background-color: #252525;
 }
 
 QFrame#moreMenu {
