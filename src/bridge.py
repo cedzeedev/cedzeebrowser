@@ -3,6 +3,7 @@ import os
 import base64
 import shutil
 import platform
+import re
 from src.Update import update_all
 from functools import wraps
 from urllib.parse import urlparse, urlunparse, quote
