@@ -2,8 +2,10 @@ import json
 import os
 import base64
 import shutil
+import platform
 from src.Update import update_all
 from functools import wraps
+from urllib.parse import urlparse, urlunparse, quote
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QVariant
 from PyQt6.QtWebEngineCore import QWebEngineProfile
 from PyQt6.QtWebEngineCore import QWebEnginePage
@@ -22,6 +24,23 @@ directory = os.path.dirname(directory1)
 CONFIG_FILE = f"{directory}/resources/config.json"
 
 
+def path_to_uri(path):
+    path = os.path.abspath(path)
+    system = platform.system()
+
+    if system == "Windows":
+        path = path.replace("\\", "/")
+        if not path.startswith("/"):
+            path = "/" + path
+        uri = "file://" + path
+    elif system in ("Linux", "Darwin"):
+        uri = "file://" + path
+    else:
+        uri = "file://" + path
+    uri = quote(uri, safe=":/")
+    return uri
+
+
 def require_local_url(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
@@ -29,7 +48,7 @@ def require_local_url(method):
             print("⚠️ web_page non défini.")
             return None
         url = self.web_page.url().toString()
-        if not url.startswith("file:///"):
+        if not url.startswith(path_to_uri(directory)):
             return None
         return method(self, *args, **kwargs)
 
