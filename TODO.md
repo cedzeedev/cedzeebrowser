@@ -1,6 +1,7 @@
 ## ✅ Task List importants
 
-- [ ] Besoin d'un logo
+- [ ] Besoin d'un logo (Vote pour natdev_1)
+- [ ] Lancement rapide du navigateur (Multithreading) 
 
 ## ✅ Task List optionnels
 
