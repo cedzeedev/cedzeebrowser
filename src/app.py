@@ -152,11 +152,28 @@ if version_online != "error" and version != version_online and version < version
         pass
 
 
-class NetworkRequestLogger(QWebEngineUrlRequestInterceptor):
+class AdBlockerRequestInterceptor(QWebEngineUrlRequestInterceptor):
+    def __init__(self, parent=None, block_list=None, browser_window=None):
+        super().__init__(parent)
+        self.block_list = block_list if block_list else set()
+        self.browser_window = browser_window
+
     def interceptRequest(self, info: QWebEngineUrlRequestInfo):
-        url = info.requestUrl().toString()
-        method = info.requestMethod().data().decode("utf-8")
-        resource_type = info.resourceType()
+        if not (self.browser_window and self.browser_window.ad_blocker_enabled):
+            return
+
+        url = info.requestUrl()
+        host = url.host().lower()
+
+        if host.startswith("www."):
+            host = host[4:]
+
+        for blocked_domain in self.block_list:
+            blocked_domain = blocked_domain.lower()
+            if host == blocked_domain or host.endswith("." + blocked_domain):
+                print(f"[AdBlock] BLOQUÉ : {url.toString()} (host: {host})")
+                info.block(True)
+                return
 
 
 class CustomWebEnginePage(QWebEnginePage):
@@ -211,6 +228,9 @@ class BrowserWindow(QMainWindow):
 
         self.download_manager = DownloadManager()
 
+        self.ad_blocker_enabled = False
+        self.ad_block_list = self.load_ad_block_list()
+
         self.main_widget = QWidget()
         self.setCentralWidget(self.main_widget)
         self.main_layout = QHBoxLayout(self.main_widget)
@@ -259,8 +279,11 @@ class BrowserWindow(QMainWindow):
         )
         self.profile.downloadRequested.connect(self.on_downloadRequested)
 
-        self.request_logger = NetworkRequestLogger()
-        self.profile.setUrlRequestInterceptor(self.request_logger)
+        self.request_interceptor = AdBlockerRequestInterceptor(
+            block_list=self.ad_block_list, browser_window=self
+        )
+        self.profile.setUrlRequestInterceptor(self.request_interceptor)
+
         try:
             css_path = os.path.abspath(f"{directory}/theme/theme.css")
             with open(css_path, "r") as f:
@@ -272,6 +295,40 @@ class BrowserWindow(QMainWindow):
 
     def contextMenuEvent(self, event):
         event.ignore()
+
+    def load_ad_block_list(self):
+        AD_BLOCK_LIST_URL = (
+            "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt"
+        )
+        block_list = set()
+
+        try:
+            response = requests.get(AD_BLOCK_LIST_URL, timeout=10)
+            response.raise_for_status()
+            lines = response.text.splitlines()
+
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith("!") or line.startswith("@@"):
+                    continue
+
+                if line.startswith("||"):
+                    domain = line[2:].split("^")[0]
+                    if domain:
+                        block_list.add(domain.lower())
+
+        except Exception as e:
+            print(f"[AdBlock] Échec du chargement en ligne : {e}")
+            block_list_path = os.path.join(directory, "resources", "ad_block_list.txt")
+            try:
+                with open(block_list_path, "r", encoding="utf-8") as f:
+                    block_list = {line.strip().lower() for line in f if line.strip()}
+                    print(f"[AdBlock] Liste locale chargée depuis : {block_list_path}")
+            except FileNotFoundError:
+                print(f"[AdBlock] Liste locale introuvable : {block_list_path}")
+
+        print(f"[AdBlock] {len(block_list)} domaines chargés dans la liste de blocage.")
+        return block_list
 
     def _setup_shortcuts(self):
         for seq, fn in [
@@ -374,6 +431,14 @@ class BrowserWindow(QMainWindow):
 
         icons_path = f"{directory}/resources/icons/"
 
+        self.adblock_icon_on = QIcon(f"{icons_path}adblock_on.png")
+        self.adblock_icon_off = QIcon(f"{icons_path}adblock_off.png")
+        self.ad_blocker_button = QPushButton()
+        self.ad_blocker_button.clicked.connect(self.toggle_ad_blocker)
+        self.ad_blocker_button.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+        menu_layout.addWidget(self.ad_blocker_button)
+        self.update_ad_blocker_button_ui()
+
         menu_items = [
             ("history", "Historique", self.open_history),
             ("favorites", "Favoris", self.open_favorites),
@@ -401,6 +466,24 @@ class BrowserWindow(QMainWindow):
         self.menu_animation = QPropertyAnimation(self.more_menu, b"geometry")
         self.menu_animation.setDuration(200)
         self.menu_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+
+    def toggle_ad_blocker(self):
+        """Active ou désactive le bloqueur de publicités."""
+        self.ad_blocker_enabled = not self.ad_blocker_enabled
+        print(f"Bloqueur de pub {'activé' if self.ad_blocker_enabled else 'désactivé'}")
+        self.update_ad_blocker_button_ui()
+        if self.current_browser():
+            self.current_browser().reload()
+        self.toggle_more_menu()
+
+    def update_ad_blocker_button_ui(self):
+        """Met à jour l'icône et le texte du bouton du bloqueur de pub."""
+        if self.ad_blocker_enabled:
+            self.ad_blocker_button.setText(" Bloqueur de pub (Activé)")
+            self.ad_blocker_button.setIcon(self.adblock_icon_on)
+        else:
+            self.ad_blocker_button.setText(" Bloqueur de pub (Désactivé)")
+            self.ad_blocker_button.setIcon(self.adblock_icon_off)
 
     def toggle_more_menu(self):
         button_pos = self.more_button.mapTo(self, QPoint(0, self.more_button.height()))
