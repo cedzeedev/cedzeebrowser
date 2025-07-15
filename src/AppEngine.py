@@ -48,12 +48,8 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--enable-native-gpu-memory-buffers"
 )
 
-application = QApplication.instance()
 directory1 = os.path.dirname(os.path.abspath(__file__))
 directory = os.path.dirname(directory1)
-
-if not application:
-    application = QApplication(sys.argv)
 
 home_url = "https://www.youtube.com"
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
@@ -321,15 +317,19 @@ class BrowserWindow(QMainWindow):
             self.browser.setUrl(QUrl.fromLocalFile(offline_url))
             return
 
-        if data["width"]:
-            Window_width = data["width"]
-        if data["height"]:
-            Window_height = data["height"]
-        if data["title"]:
-            Window_Title = data["title"]
+        local_width = Window_width
+        local_height = Window_height
+        local_title = Window_Title
 
-        self.resize(Window_width, Window_height)
-        self.setWindowTitle(Window_Title)
+        if data.get("width") is not None:
+            local_width = data["width"]
+        if data.get("height") is not None:
+            local_height = data["height"]
+        if data.get("title") is not None:
+            local_title = data["title"]
+
+        self.resize(local_width, local_height)
+        self.setWindowTitle(local_title)
 
         flags = self.windowFlags()
 
@@ -451,14 +451,9 @@ def perform_initial_load(url):
 
 def start_app(url: str):
     global home_url
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication(sys.argv)
-
     home_url = url
     window = BrowserWindow()
     window.browser.setHtml("<h1>Chargement...</h1>")
-    window.show()
 
     thread = QThread()
     worker = Worker(perform_initial_load, url)
@@ -475,12 +470,12 @@ def start_app(url: str):
 
     window.loading_thread = thread
     window.loading_worker = worker
-
-    if not QApplication.instance().startingUp():
-        app.exec()
+    return window
 
 
 if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
     initial_load_url = home_url
     if len(sys.argv) > 1:
         arg_path = sys.argv[1]
@@ -492,5 +487,7 @@ if __name__ == "__main__":
                 f"L'argument fourni '{arg_path}' n'est pas un chemin de fichier valide. Chargement de l'URL d'accueil par défaut."
             )
 
-    start_app(initial_load_url)
-    sys.exit(application.exec())
+    main_window = start_app(initial_load_url)
+    main_window.show()
+
+    sys.exit(app.exec())
