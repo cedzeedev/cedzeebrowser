@@ -30,20 +30,20 @@ If you wish to contribute to the project, I recommend focusing on the features o
 ./
 ├── ...
 ├── main.py
+├── src
+│   └── *.py
 ├── offline
 │   ├── ...
 │   └── index.html
 ├───resources
-│   |──config
-│   |──github
+│   |──...
 │   └──icons
+│       └── *.png
 ├── theme
 │   ├── ...
 │   └── theme.css
 └── web
-    ├── index.html
-    ├── history.html
-    └── logic.js
+    └── *.html
 ```
 
 ## Theme and color scheme
