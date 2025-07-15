@@ -2,6 +2,7 @@ import os
 import sys
 import csv
 import json
+import traceback
 from datetime import datetime
 import requests
 from pathlib import Path
@@ -10,7 +11,14 @@ from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup
 from src.bridge import CedzeeBridge
 from PyQt6.QtWebChannel import QWebChannel
-from PyQt6.QtCore import Qt, QUrl, QPropertyAnimation, QEasingCurve, QObject, pyqtSlot
+from PyQt6.QtCore import (
+    Qt,
+    QUrl,
+    QObject,
+    pyqtSlot,
+    QThread,
+    pyqtSignal,
+)
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import (
@@ -24,12 +32,9 @@ from PyQt6.QtWebEngineCore import (
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
-    QMenu,
-    QToolBar,
     QWidget,
     QHBoxLayout,
     QFileDialog,
-    QSizePolicy,
 )
 
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
@@ -43,12 +48,8 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--enable-native-gpu-memory-buffers"
 )
 
-application = QApplication.instance()
 directory1 = os.path.dirname(os.path.abspath(__file__))
 directory = os.path.dirname(directory1)
-
-if not application:
-    application = QApplication(sys.argv)
 
 home_url = "https://www.youtube.com"
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
@@ -64,6 +65,28 @@ Window_height = 800
 Window_Title = "Cedzee Browser"
 
 CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
+
+
+class Worker(QObject):
+    finished = pyqtSignal()
+    result = pyqtSignal(object)
+    error = pyqtSignal(tuple)
+
+    def __init__(self, fn, *args, **kwargs):
+        super().__init__()
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    @pyqtSlot()
+    def run(self):
+        try:
+            output = self.fn(*self.args, **self.kwargs)
+            self.result.emit(output)
+        except Exception as e:
+            self.error.emit((e, traceback.format_exc()))
+        finally:
+            self.finished.emit()
 
 
 class NetworkRequestLogger(QWebEngineUrlRequestInterceptor):
@@ -161,11 +184,8 @@ class BrowserWindow(QMainWindow):
 
         self.main_layout.addWidget(self.browser)
 
-        # self.menu = QToolBar("Menu de navigation")
-        # self.addToolBar(self.menu)
-        # self.add_navigation_buttons()
-
         self.load_history()
+        self.thread_pool = {}
 
     def _attach_webchannel(self, browser: QWebEngineView):
         channel = QWebChannel(self)
@@ -178,43 +198,13 @@ class BrowserWindow(QMainWindow):
             lambda k, v: print(f"Setting '{k}' mis à jour en '{v}'")
         )
 
-    # def add_navigation_buttons(self):
-    #     icons = {
-    #         "back": "arrow_back.png",
-    #         "forward": "arrow_forward.png",
-    #         "refresh": "refresh.png",
-    #         "home": "home.png",
-    #     }
-
-    #     for name, fn in [
-    #         ("home", self.go_home),
-    #         ("refresh", lambda: self.browser.reload()),
-    #     ]:
-    #         btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
-    #         btn.setToolTip(name.capitalize())
-    #         btn.triggered.connect(fn)
-    #         self.menu.addAction(btn)
-
-    #     spacer = QWidget()
-    #     spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-    #     self.menu.addWidget(spacer)
-
-    #     for name, fn in [
-    #         ("back", lambda: self.browser.back()),
-    #         ("forward", lambda: self.browser.forward()),
-    #     ]:
-    #         btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
-    #         btn.setToolTip(name.capitalize())
-    #         btn.triggered.connect(fn)
-    #         self.menu.addAction(btn)
-
     def go_home(self):
         self.browser.setUrl(QUrl(home_url))
 
     @staticmethod
-    def is_internet_available() -> bool:
+    def _is_internet_available_worker() -> bool:
         try:
-            requests.get("https://www.google.com", timeout=3)
+            requests.get("https://www.google.com", timeout=5)
             return True
         except requests.RequestException:
             return False
@@ -226,14 +216,27 @@ class BrowserWindow(QMainWindow):
                 "http",
                 "https",
             ):
-                if not BrowserWindow.is_internet_available():
-                    print(
-                        "Pas de connexion Internet détectée. Affichage page offline.",
-                        file=sys.stderr,
-                    )
-                    self.browser.setUrl(QUrl.fromLocalFile(offline_url))
+                self.thread = QThread()
+                self.worker = Worker(self._is_internet_available_worker)
+                self.worker.moveToThread(self.thread)
+
+                self.thread.started.connect(self.worker.run)
+                self.worker.finished.connect(self.thread.quit)
+                self.worker.finished.connect(self.worker.deleteLater)
+                self.thread.finished.connect(self.thread.deleteLater)
+                self.worker.result.connect(self._handle_internet_check_result)
+
+                self.thread.start()
         else:
             self.save_to_history(self.browser.url().toString(), self.browser.title())
+
+    def _handle_internet_check_result(self, is_available):
+        if not is_available:
+            print(
+                "Pas de connexion Internet détectée. Affichage page offline.",
+                file=sys.stderr,
+            )
+            self.browser.setUrl(QUrl.fromLocalFile(offline_url))
 
     def update_window_title(self, title):
         self.setWindowTitle(title)
@@ -243,24 +246,39 @@ class BrowserWindow(QMainWindow):
         if not os.path.exists(history_dir):
             os.makedirs(history_dir)
 
+    def _save_to_history_worker(self, url_str: str, title: str):
+        history_path = os.path.join(directory, "resources", "config", "history.csv")
+        try:
+            with open(history_path, mode="a", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(
+                    [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), url_str, title]
+                )
+        except Exception as e:
+            print(f"Erreur lors de l'écriture dans l'historique : {e}")
+
     def save_to_history(self, url_str: str, title: str):
-        if (
+        if not (
             url_str.startswith("http://")
             or url_str.startswith("https://")
             or url_str.startswith("file:///")
         ):
-            if not title or title.startswith("http") or title == "Chargement...":
-                return
+            return
+        if not title or title.startswith("http") or title == "Chargement...":
+            return
 
-            history_path = os.path.join(directory, "resources", "config", "history.csv")
-            try:
-                with open(history_path, mode="a", newline="", encoding="utf-8") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(
-                        [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), url_str, title]
-                    )
-            except Exception as e:
-                print(f"Erreur lors de l'écriture dans l'historique : {e}")
+        thread = QThread()
+        worker = Worker(self._save_to_history_worker, url_str, title)
+        worker.moveToThread(thread)
+
+        thread.started.connect(worker.run)
+        worker.finished.connect(thread.quit)
+        worker.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+        thread.start()
+
+        self.thread_pool[id(thread)] = (thread, worker)
+        thread.finished.connect(lambda: self.thread_pool.pop(id(thread), None))
 
     def load_history(self):
         try:
@@ -293,84 +311,171 @@ class BrowserWindow(QMainWindow):
     def open_new_tab(self):
         self.browser.setUrl(QUrl.fromLocalFile(home_url))
 
+    def finalize_initial_load(self, data):
+        if data.get("error"):
+            print(data["error"], file=sys.stderr)
+            self.browser.setUrl(QUrl.fromLocalFile(offline_url))
+            return
 
-def start_app(url: str):
-    global home_url
-    global Window_width
-    global Window_height
-    global Window_Title
+        local_width = Window_width
+        local_height = Window_height
+        local_title = Window_Title
 
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication(sys.argv)
+        if data.get("width") is not None:
+            local_width = data["width"]
+        if data.get("height") is not None:
+            local_height = data["height"]
+        if data.get("title") is not None:
+            local_title = data["title"]
 
-    html_content = ""
-    is_local_file = url.startswith("file://")
+        self.resize(local_width, local_height)
+        self.setWindowTitle(local_title)
 
-    if is_local_file:
+        flags = self.windowFlags()
+
+        if data.get("caption") == "false":
+            flags |= Qt.WindowType.FramelessWindowHint
+
+        if data.get("sysmenu") == "false":
+            flags &= ~Qt.WindowType.WindowSystemMenuHint
+        else:
+            if data.get("maximizebutton") == "false":
+                flags &= ~Qt.WindowType.WindowMaximizeButtonHint
+            elif data.get("maximizebutton") == "true":
+                flags |= Qt.WindowType.WindowMaximizeButtonHint
+
+            if data.get("minimizebutton") == "false":
+                flags &= ~Qt.WindowType.WindowMinimizeButtonHint
+            elif data.get("minimizebutton") == "true":
+                flags |= Qt.WindowType.WindowMinimizeButtonHint
+
+        if data.get("showintaskbar") == "false":
+            flags |= Qt.WindowType.Tool
+        elif data.get("showintaskbar") == "true":
+            flags &= ~Qt.WindowType.Tool
+
+        self.setWindowFlags(flags)
+
+        if data["is_local_file"] and data["html_content"]:
+            self.browser.setHtml(data["html_content"], QUrl(data["final_url"]))
+        else:
+            self.browser.setUrl(QUrl(data["final_url"]))
+
+        state = data.get("windowstate", "normal")
+        if state == "fullscreen":
+            self.showFullScreen()
+        elif state == "maximized":
+            self.showMaximized()
+        elif state == "minimized":
+            self.showMinimized()
+        else:
+            self.show()
+
+
+def perform_initial_load(url):
+    data = {
+        "html_content": "",
+        "final_url": url,
+        "width": None,
+        "height": None,
+        "title": None,
+        "is_local_file": url.startswith("file://"),
+        "error": None,
+        "caption": None,
+        "sysmenu": None,
+        "maximizebutton": None,
+        "minimizebutton": None,
+        "showintaskbar": None,
+        "windowstate": "normal",
+    }
+
+    if data["is_local_file"]:
         parsed = urlparse(url)
-        path = unquote(parsed.path)
+        path_from_uri = unquote(parsed.path)
+        netloc = unquote(parsed.netloc)
 
+        full_path = ""
         if sys.platform.startswith("win"):
-            if path.startswith("/") and len(path) > 2 and path[2] == ":":
-                path = path[1:]
+            full_path = netloc + path_from_uri
+            if full_path.startswith("/") and len(full_path) > 2 and full_path[2] == ":":
+                full_path = full_path[1:]
+        else:
+            full_path = path_from_uri
 
-        path_obj = Path(path)
+        path_obj = Path(full_path)
         if not path_obj.exists():
-            raise FileNotFoundError(f"Fichier introuvable : {path_obj}")
+            data["error"] = f"Fichier introuvable : {path_obj}"
+            return data
 
         with open(path_obj, "r", encoding="utf-8") as f:
-            html_content = f.read()
+            data["html_content"] = f.read()
     else:
         try:
             response = requests.get(url)
             response.raise_for_status()
-            html_content = response.text
+            data["html_content"] = response.text
         except requests.RequestException as e:
-            print(f"Erreur lors du téléchargement de l'URL {url}: {e}", file=sys.stderr)
-            url = QUrl.fromLocalFile(offline_url).toString()
-            html_content = ""
+            data["error"] = f"Erreur lors du téléchargement de l'URL {url}: {e}"
+            data["final_url"] = QUrl.fromLocalFile(offline_url).toString()
+            return data
 
-    if html_content:
-        soup = BeautifulSoup(html_content, "html.parser")
-        horizontal = soup.find("meta", attrs={"cedzeeapp_horizontal": True})
-        vertical = soup.find("meta", attrs={"cedzeeapp_vertical": True})
-        title = soup.find("meta", attrs={"cedzeeapp_title": True})
+    if data["html_content"]:
+        soup = BeautifulSoup(data["html_content"], "html.parser")
 
-        if horizontal:
-            try:
-                Window_width = int(horizontal["cedzeeapp_horizontal"])
-            except ValueError:
-                print(
-                    f"Invalid cedzeeapp_horizontal value: {horizontal['cedzeeapp_horizontal']}"
-                )
+        meta_map = {
+            "width": "cedzeeapp_horizontal",
+            "height": "cedzeeapp_vertical",
+            "title": "cedzeeapp_title",
+            "caption": "cedzeeapp_caption",
+            "sysmenu": "cedzeeapp_sysmenu",
+            "maximizebutton": "cedzeeapp_maximizebutton",
+            "minimizebutton": "cedzeeapp_minimizebutton",
+            "showintaskbar": "cedzeeapp_showintaskbar",
+            "windowstate": "cedzeeapp_windowstate",
+        }
 
-        if vertical:
-            try:
-                Window_height = int(vertical["cedzeeapp_vertical"])
-            except ValueError:
-                print(
-                    f"Invalid cedzeeapp_vertical value: {vertical['cedzeeapp_vertical']}"
-                )
+        for key, attr_name in meta_map.items():
+            meta_tag = soup.find("meta", attrs={attr_name: True})
+            if meta_tag and meta_tag.has_attr(attr_name):
+                value = meta_tag[attr_name].lower()
+                if key in ["width", "height"]:
+                    try:
+                        data[key] = int(value)
+                    except ValueError:
+                        print(f"Invalid value for {attr_name}: {value}")
+                else:
+                    data[key] = value
 
-        if title:
-            Window_Title = title["cedzeeapp_title"]
+    return data
 
+
+def start_app(url: str):
+    global home_url
     home_url = url
-
     window = BrowserWindow()
-    if is_local_file and html_content:
-        window.browser.setHtml(html_content, QUrl(url))
-    else:
-        window.browser.setUrl(QUrl(url))
+    window.browser.setHtml("<h1>Chargement...</h1>")
 
-    window.show()
+    thread = QThread()
+    worker = Worker(perform_initial_load, url)
+    worker.moveToThread(thread)
 
-    if not QApplication.instance().startingUp():
-        app.exec()
+    thread.started.connect(worker.run)
+    worker.finished.connect(thread.quit)
+    worker.finished.connect(worker.deleteLater)
+    thread.finished.connect(thread.deleteLater)
+    worker.result.connect(window.finalize_initial_load)
+    worker.error.connect(lambda e: print(f"Erreur dans le thread de chargement: {e}"))
+
+    thread.start()
+
+    window.loading_thread = thread
+    window.loading_worker = worker
+    return window
 
 
 if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
     initial_load_url = home_url
     if len(sys.argv) > 1:
         arg_path = sys.argv[1]
@@ -382,4 +487,7 @@ if __name__ == "__main__":
                 f"L'argument fourni '{arg_path}' n'est pas un chemin de fichier valide. Chargement de l'URL d'accueil par défaut."
             )
 
-    start_app(initial_load_url)
+    main_window = start_app(initial_load_url)
+    main_window.show()
+
+    sys.exit(app.exec())

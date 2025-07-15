@@ -3,12 +3,13 @@ import sys
 import csv
 import json
 import platform
-from urllib.parse import urlparse, urlunparse, quote
-from datetime import datetime
-from src.AppEngine import start_app
+import ctypes
 import requests
+from urllib.parse import urlparse, quote
+from datetime import datetime
+
+from src.AppEngine import start_app
 from src.bridge import CedzeeBridge
-from src.Update import update_all
 from src.DownloadManager import DownloadManager
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import (
@@ -21,7 +22,8 @@ from PyQt6.QtCore import (
     QRect,
     QPoint,
     qInstallMessageHandler,
-    QtMsgType,
+    QThread,
+    pyqtSignal,
 )
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWebEngineWidgets import QWebEngineView
@@ -51,6 +53,10 @@ from PyQt6.QtWidgets import (
     QToolButton,
 )
 
+if sys.platform == "win32":
+    myappid = "Cedzeedev.Cedzeebrowser.release.1_0"
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
 
 def message_handler(mode, context, message):
     if "QWindowsWindow::setGeometry" in message:
@@ -73,12 +79,11 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
 )
 
 application = QApplication.instance()
+if not application:
+    application = QApplication(sys.argv)
 
 directory1 = os.path.dirname(os.path.abspath(__file__))
 directory = os.path.dirname(directory1)
-
-if not application:
-    application = QApplication(sys.argv)
 
 home_url = os.path.abspath(f"{directory}/web/index.html")
 history_page_url = os.path.abspath(f"{directory}/web/history.html")
@@ -89,67 +94,119 @@ welcome_url = os.path.abspath(f"{directory}/web/welcome.html")
 contributors_url = os.path.abspath(f"{directory}/web/contributors.html")
 favorites_url = os.path.abspath(f"{directory}/web/favorites.html")
 settings_url = os.path.abspath(f"{directory}/web/settings.html")
-CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
-
-version_json_url = "https://raw.githubusercontent.com/cedzeedev/cedzeebrowser/refs/heads/main/version.json"
 
 
-def check_first_run():
-    if not os.path.exists(CONFIG_FILE):
-        config = {"first_run": False}
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=4)
-        return True
-    else:
+class FirstRunWorker(QObject):
+    finished = pyqtSignal(bool)
+    error = pyqtSignal(str)
+
+    def __init__(self):
+        super().__init__()
+        self.config_file = os.path.abspath(f"{directory}/resources/config.json")
+
+    @pyqtSlot()
+    def check(self):
         try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            if not os.path.exists(self.config_file):
+                config = {"first_run": False}
+                with open(self.config_file, "w", encoding="utf-8") as f:
+                    json.dump(config, f, indent=4)
+                self.finished.emit(True)
+                return
+
+            with open(self.config_file, "r", encoding="utf-8") as f:
                 config = json.load(f)
-        except (json.JSONDecodeError, IOError):
-            config = {"first_run": False}
-            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                json.dump(config, f, indent=4)
-            return True
 
-        if config.get("first_run", True):
-            config["first_run"] = False
-            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                json.dump(config, f, indent=4)
-            return True
-        else:
-            return False
-
-
-version_file_pth = f"{directory}/version.json"
-try:
-    with open(version_file_pth, "r", encoding="utf-8") as file:
-        data = json.load(file)
-    version = data[0].get("version", "inconnue")
-except Exception as e:
-    print(f"Erreur lors du chargement de la version : {e}")
-    version = "inconnue"
+            if config.get("first_run", True):
+                config["first_run"] = False
+                with open(self.config_file, "w", encoding="utf-8") as f:
+                    json.dump(config, f, indent=4)
+                self.finished.emit(True)
+            else:
+                self.finished.emit(False)
+        except (json.JSONDecodeError, IOError, Exception) as e:
+            self.error.emit(
+                f"Erreur lors de la vérification du premier lancement : {e}"
+            )
+            self.finished.emit(False)
 
 
-def get_online_version():
-    try:
-        response = requests.get(version_json_url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        return data[0].get("version", "inconnue")
-    except Exception:
-        return "error"
+class UpdateCheckWorker(QObject):
+    finished = pyqtSignal(bool)
+    error = pyqtSignal(str)
+
+    def __init__(self):
+        super().__init__()
+        self.version_json_url = "https://raw.githubusercontent.com/cedzeedev/cedzeebrowser/refs/heads/main/version.json"
+        self.version_file_path = f"{directory}/version.json"
+
+    @pyqtSlot()
+    def check(self):
+        try:
+            with open(self.version_file_path, "r", encoding="utf-8") as file:
+                data = json.load(file)
+            local_version = data[0].get("version", "inconnue")
+
+            response = requests.get(self.version_json_url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            online_version = data[0].get("version", "inconnue")
+
+            if (
+                online_version != "error"
+                and local_version != "inconnue"
+                and local_version < online_version
+            ):
+                with open(
+                    f"{directory}/version_online.json", "w", encoding="utf-8"
+                ) as f:
+                    f.write(response.text)
+                self.finished.emit(True)
+            else:
+                self.finished.emit(False)
+        except Exception as e:
+            self.error.emit(f"Erreur lors de la vérification de mise à jour : {e}")
+            self.finished.emit(False)
 
 
-version_online = get_online_version()
-update_available = False
-if version_online != "error" and version != version_online and version < version_online:
-    update_available = True
-    try:
-        response = requests.get(version_json_url, timeout=10)
-        if response.status_code == 200:
-            with open(f"{directory}/version_online.json", "w", encoding="utf-8") as f:
-                f.write(response.text)
-    except Exception:
-        pass
+class AdBlockerWorker(QObject):
+    list_loaded = pyqtSignal(set)
+    error = pyqtSignal(str)
+
+    @pyqtSlot()
+    def load_list(self):
+        AD_BLOCK_LIST_URL = (
+            "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt"
+        )
+        block_list = set()
+        try:
+            response = requests.get(AD_BLOCK_LIST_URL, timeout=10)
+            response.raise_for_status()
+            lines = response.text.splitlines()
+
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith("!") or line.startswith("@@"):
+                    continue
+                if line.startswith("||"):
+                    domain = line[2:].split("^")[0]
+                    if domain:
+                        block_list.add(domain.lower())
+            self.list_loaded.emit(block_list)
+        except Exception as e:
+            self.error.emit(f"[AdBlock] Échec du chargement en ligne : {e}")
+            block_list_path = os.path.join(directory, "resources", "ad_block_list.txt")
+            try:
+                with open(block_list_path, "r", encoding="utf-8") as f:
+                    local_block_list = {
+                        line.strip().lower() for line in f if line.strip()
+                    }
+                self.list_loaded.emit(local_block_list)
+            except FileNotFoundError:
+                self.error.emit(
+                    f"[AdBlock] Liste locale introuvable : {block_list_path}"
+                )
+                self.list_loaded.emit(set())
 
 
 class AdBlockerRequestInterceptor(QWebEngineUrlRequestInterceptor):
@@ -171,7 +228,6 @@ class AdBlockerRequestInterceptor(QWebEngineUrlRequestInterceptor):
         for blocked_domain in self.block_list:
             blocked_domain = blocked_domain.lower()
             if host == blocked_domain or host.endswith("." + blocked_domain):
-                print(f"[AdBlock] BLOQUÉ : {url.toString()} (host: {host})")
                 info.block(True)
                 return
 
@@ -202,11 +258,14 @@ class CustomWebEnginePage(QWebEnginePage):
                 "settings": settings_url,
             }
             real_path = mapping.get(target)
-            if real_path:
-                if self.browser_window and self.browser_window.current_browser():
-                    self.browser_window.current_browser().setUrl(
-                        QUrl.fromLocalFile(real_path)
-                    )
+            if (
+                real_path
+                and self.browser_window
+                and self.browser_window.current_browser()
+            ):
+                self.browser_window.current_browser().setUrl(
+                    QUrl.fromLocalFile(real_path)
+                )
             return False
         return super().acceptNavigationRequest(url, nav_type, isMainFrame)
 
@@ -225,11 +284,17 @@ class BrowserWindow(QMainWindow):
         self.setWindowTitle("CEDZEE Browser")
         self.resize(1200, 800)
         self.center()
+        icon_path = f"{directory}/resources/icons/icon.png"
+        try:
+            self.setWindowIcon(QIcon(icon_path))
+        except Exception as e:
+            print(f"Erreur lors du chargement de l'icône : {e}")
+
+        self.app_windows = []
 
         self.download_manager = DownloadManager()
-
         self.ad_blocker_enabled = False
-        self.ad_block_list = self.load_ad_block_list()
+        self.ad_block_list = set()
 
         self.main_widget = QWidget()
         self.setCentralWidget(self.main_widget)
@@ -261,7 +326,6 @@ class BrowserWindow(QMainWindow):
         )
         self.addToolBar(self.menu)
         self.add_navigation_buttons()
-
         self.create_more_menu()
 
         self.sidebar.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -279,10 +343,8 @@ class BrowserWindow(QMainWindow):
         )
         self.profile.downloadRequested.connect(self.on_downloadRequested)
 
-        self.request_interceptor = AdBlockerRequestInterceptor(
-            block_list=self.ad_block_list, browser_window=self
-        )
-        self.profile.setUrlRequestInterceptor(self.request_interceptor)
+        self.request_interceptor = None
+        self.threads = []
 
         try:
             css_path = os.path.abspath(f"{directory}/theme/theme.css")
@@ -292,43 +354,68 @@ class BrowserWindow(QMainWindow):
             print("theme.css not found.")
 
         self.add_homepage_tab()
+        self.start_background_tasks()
+
+    def start_background_tasks(self):
+        self.first_run_thread = QThread()
+        self.first_run_worker = FirstRunWorker()
+        self.first_run_worker.moveToThread(self.first_run_thread)
+        self.first_run_thread.started.connect(self.first_run_worker.check)
+        self.first_run_worker.finished.connect(self.on_first_run_check_finished)
+        self.first_run_worker.error.connect(lambda msg: print(msg, file=sys.stderr))
+        self.first_run_worker.finished.connect(self.first_run_thread.quit)
+        self.first_run_worker.finished.connect(self.first_run_worker.deleteLater)
+        self.first_run_thread.finished.connect(self.first_run_thread.deleteLater)
+        self.first_run_thread.start()
+        self.threads.append(self.first_run_thread)
+
+        self.update_check_thread = QThread()
+        self.update_check_worker = UpdateCheckWorker()
+        self.update_check_worker.moveToThread(self.update_check_thread)
+        self.update_check_thread.started.connect(self.update_check_worker.check)
+        self.update_check_worker.finished.connect(self.on_update_check_finished)
+        self.update_check_worker.error.connect(lambda msg: print(msg, file=sys.stderr))
+        self.update_check_worker.finished.connect(self.update_check_thread.quit)
+        self.update_check_worker.finished.connect(self.update_check_worker.deleteLater)
+        self.update_check_thread.finished.connect(self.update_check_thread.deleteLater)
+        self.update_check_thread.start()
+        self.threads.append(self.update_check_thread)
+
+        self.adblock_thread = QThread()
+        self.adblock_worker = AdBlockerWorker()
+        self.adblock_worker.moveToThread(self.adblock_thread)
+        self.adblock_thread.started.connect(self.adblock_worker.load_list)
+        self.adblock_worker.list_loaded.connect(self.on_adblock_list_loaded)
+        self.adblock_worker.error.connect(lambda msg: print(msg, file=sys.stderr))
+        self.adblock_worker.list_loaded.connect(self.adblock_thread.quit)
+        self.adblock_worker.list_loaded.connect(self.adblock_worker.deleteLater)
+        self.adblock_thread.finished.connect(self.adblock_thread.deleteLater)
+        self.adblock_thread.start()
+        self.threads.append(self.adblock_thread)
+
+    @pyqtSlot(bool)
+    def on_first_run_check_finished(self, is_first_run):
+        if is_first_run:
+            self.open_welcome_tab()
+
+    @pyqtSlot(bool)
+    def on_update_check_finished(self, is_update_available):
+        if is_update_available:
+            self.open_update_tab()
+
+    @pyqtSlot(set)
+    def on_adblock_list_loaded(self, block_list):
+        self.ad_block_list = block_list
+        self.request_interceptor = AdBlockerRequestInterceptor(
+            block_list=self.ad_block_list, browser_window=self
+        )
+        self.profile.setUrlRequestInterceptor(self.request_interceptor)
+        print(
+            f"[AdBlock] {len(self.ad_block_list)} domaines chargés dans la liste de blocage."
+        )
 
     def contextMenuEvent(self, event):
         event.ignore()
-
-    def load_ad_block_list(self):
-        AD_BLOCK_LIST_URL = (
-            "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt"
-        )
-        block_list = set()
-
-        try:
-            response = requests.get(AD_BLOCK_LIST_URL, timeout=10)
-            response.raise_for_status()
-            lines = response.text.splitlines()
-
-            for line in lines:
-                line = line.strip()
-                if not line or line.startswith("!") or line.startswith("@@"):
-                    continue
-
-                if line.startswith("||"):
-                    domain = line[2:].split("^")[0]
-                    if domain:
-                        block_list.add(domain.lower())
-
-        except Exception as e:
-            print(f"[AdBlock] Échec du chargement en ligne : {e}")
-            block_list_path = os.path.join(directory, "resources", "ad_block_list.txt")
-            try:
-                with open(block_list_path, "r", encoding="utf-8") as f:
-                    block_list = {line.strip().lower() for line in f if line.strip()}
-                    print(f"[AdBlock] Liste locale chargée depuis : {block_list_path}")
-            except FileNotFoundError:
-                print(f"[AdBlock] Liste locale introuvable : {block_list_path}")
-
-        print(f"[AdBlock] {len(block_list)} domaines chargés dans la liste de blocage.")
-        return block_list
 
     def _setup_shortcuts(self):
         for seq, fn in [
@@ -353,10 +440,11 @@ class BrowserWindow(QMainWindow):
             self.stacked_widget.setCurrentIndex(row)
 
     def change_tab_by_sidebar(self, idx):
-        self.stacked_widget.setCurrentIndex(idx)
-        b = self.current_browser()
-        if b:
-            self.update_urlbar(b.url(), b)
+        if 0 <= idx < self.stacked_widget.count():
+            self.stacked_widget.setCurrentIndex(idx)
+            b = self.current_browser()
+            if b:
+                self.update_urlbar(b.url(), b)
 
     def center(self):
         screen_geometry = self.screen().geometry()
@@ -401,9 +489,7 @@ class BrowserWindow(QMainWindow):
         self.address_input.returnPressed.connect(self.navigate_to_url)
         self.menu.addWidget(self.address_input)
 
-        for name, fn in [
-            ("add", self.open_new_tab),
-        ]:
+        for name, fn in [("add", self.open_new_tab)]:
             btn = QAction(QIcon(f"{directory}/resources/icons/{icons[name]}"), "", self)
             btn.setToolTip(name.capitalize())
             btn.triggered.connect(fn)
@@ -454,11 +540,11 @@ class BrowserWindow(QMainWindow):
 
         for icon, text, func in menu_items:
             icon_path = f"{icons_path}/{icon}.png"
-            if not os.path.exists(icon_path):
-                btn = QPushButton(f" {text}")
-            else:
-                btn = QPushButton(QIcon(icon_path), f" {text}")
-
+            btn = (
+                QPushButton(QIcon(icon_path), f" {text}")
+                if os.path.exists(icon_path)
+                else QPushButton(f" {text}")
+            )
             btn.clicked.connect(lambda _, f=func: (f(), self.toggle_more_menu()))
             btn.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
             menu_layout.addWidget(btn)
@@ -468,7 +554,6 @@ class BrowserWindow(QMainWindow):
         self.menu_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
 
     def toggle_ad_blocker(self):
-        """Active ou désactive le bloqueur de publicités."""
         self.ad_blocker_enabled = not self.ad_blocker_enabled
         print(f"Bloqueur de pub {'activé' if self.ad_blocker_enabled else 'désactivé'}")
         self.update_ad_blocker_button_ui()
@@ -477,7 +562,6 @@ class BrowserWindow(QMainWindow):
         self.toggle_more_menu()
 
     def update_ad_blocker_button_ui(self):
-        """Met à jour l'icône et le texte du bouton du bloqueur de pub."""
         if self.ad_blocker_enabled:
             self.ad_blocker_button.setText(" Bloqueur de pub (Activé)")
             self.ad_blocker_button.setIcon(self.adblock_icon_on)
@@ -487,9 +571,7 @@ class BrowserWindow(QMainWindow):
 
     def toggle_more_menu(self):
         button_pos = self.more_button.mapTo(self, QPoint(0, self.more_button.height()))
-        menu_width = 220
-        menu_height = self.more_menu.sizeHint().height()
-
+        menu_width, menu_height = 220, self.more_menu.sizeHint().height()
         start_pos_x = button_pos.x() + self.more_button.width() - menu_width
         start_pos_y = button_pos.y()
 
@@ -515,11 +597,8 @@ class BrowserWindow(QMainWindow):
         browser = self.current_browser()
         if not browser:
             return
-
-        url = browser.url().toString()
-        title = browser.title()
+        url, title = browser.url().toString(), browser.title()
         os.makedirs(self.fav_dir, exist_ok=True)
-
         try:
             with open(self.fav_file, "r", encoding="utf-8") as f:
                 favs = json.load(f)
@@ -535,7 +614,6 @@ class BrowserWindow(QMainWindow):
             favs.append({"url": url, "title": title})
         with open(self.fav_file, "w", encoding="utf-8") as f:
             json.dump(favs, f, indent=4, ensure_ascii=False)
-
         self.update_favorite_icon(url, favs)
 
     def update_favorite_icon(self, url=None, favs=None):
@@ -566,12 +644,10 @@ class BrowserWindow(QMainWindow):
 
     def toggle_sidebar(self):
         current_width = self.sidebar.maximumWidth()
-        if current_width == 0:
-            self.sidebar_animation.setStartValue(0)
-            self.sidebar_animation.setEndValue(self.original_sidebar_width)
-        else:
-            self.sidebar_animation.setStartValue(current_width)
-            self.sidebar_animation.setEndValue(0)
+        self.sidebar_animation.setStartValue(current_width)
+        self.sidebar_animation.setEndValue(
+            self.original_sidebar_width if current_width == 0 else 0
+        )
         self.sidebar_animation.start()
 
     def _attach_webchannel(self, browser: QWebEngineView):
@@ -640,10 +716,9 @@ class BrowserWindow(QMainWindow):
                     "settings": settings_url,
                 }
                 file_path = mapping.get(target)
-                if file_path:
-                    url_to_load_obj = QUrl.fromLocalFile(file_path)
-                else:
-                    url_to_load_obj = QUrl.fromLocalFile(home_url)
+                url_to_load_obj = QUrl.fromLocalFile(
+                    file_path if file_path else home_url
+                )
             else:
                 url_to_load_obj = QUrl(url_to_load)
                 if url_to_load_obj.scheme() == "":
@@ -673,24 +748,17 @@ class BrowserWindow(QMainWindow):
         self.sidebar.setCurrentRow(self.stacked_widget.currentIndex())
 
     @staticmethod
-    def is_internet_available() -> bool:
+    def is_internet_available():
         try:
             requests.get("https://www.google.com", timeout=3)
             return True
         except requests.RequestException:
             return False
 
-    def handle_load_finished(self, ok: bool, browser_instance: QWebEngineView):
-        if not ok:
-            current_url = browser_instance.url()
-            if not current_url.isLocalFile() and current_url.scheme() in (
-                "http",
-                "https",
-            ):
-                if not BrowserWindow.is_internet_available():
-                    browser_instance.setUrl(QUrl.fromLocalFile(offline_url))
-                else:
-                    pass
+    def handle_load_finished(self, ok, browser_instance):
+        if not ok and not browser_instance.url().isLocalFile():
+            if not self.is_internet_available():
+                browser_instance.setUrl(QUrl.fromLocalFile(offline_url))
 
     def open_devtools(self):
         devtools = QWebEngineView()
@@ -752,11 +820,13 @@ class BrowserWindow(QMainWindow):
         if not os.path.exists(history_dir):
             os.makedirs(history_dir)
 
-    def save_to_history(self, url_str: str, title: str):
-        if url_str.startswith("http://") or url_str.startswith("https://"):
-            if not title or title.startswith("http") or title == "Chargement...":
-                return
-
+    def save_to_history(self, url_str, title):
+        if (
+            url_str.startswith("http")
+            and title
+            and not title.startswith("http")
+            and title != "Chargement..."
+        ):
             history_path = os.path.join(directory, "resources", "saves", "history.csv")
             try:
                 with open(history_path, mode="a", newline="", encoding="utf-8") as f:
@@ -764,7 +834,7 @@ class BrowserWindow(QMainWindow):
                     writer.writerow(
                         [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), url_str, title]
                     )
-            except Exception as e:
+            except Exception:
                 pass
 
     def load_history(self):
@@ -774,10 +844,8 @@ class BrowserWindow(QMainWindow):
             ) as f:
                 reader = csv.reader(f)
                 self.history = [row[1] for row in reader if len(row) > 1]
-                self.history_index = len(self.history) - 1
         except FileNotFoundError:
             self.history = []
-            self.history_index = -1
 
     def open_history(self):
         self.open_tab(QUrl.fromLocalFile(history_page_url))
@@ -788,7 +856,7 @@ class BrowserWindow(QMainWindow):
     def open_settings(self):
         self.open_tab(QUrl.fromLocalFile(settings_url))
 
-    def update_urlbar(self, url: QUrl, browser_instance=None):
+    def update_urlbar(self, url, browser_instance=None):
         if browser_instance != self.current_browser():
             return
         self.address_input.blockSignals(True)
@@ -803,40 +871,28 @@ class BrowserWindow(QMainWindow):
             QUrl.fromLocalFile(favorites_url).toString(): "cedzee://favorites",
             QUrl.fromLocalFile(settings_url).toString(): "cedzee://settings",
         }
-
         current_url_str = url.toString()
         disp = local_file_urls.get(current_url_str, current_url_str)
-
         self.address_input.setText(disp)
         self.address_input.setCursorPosition(0)
         self.address_input.blockSignals(False)
-
         if browser_instance:
-            title = browser_instance.title()
-            self.save_to_history(disp, title)
-
+            self.save_to_history(disp, browser_instance.title())
         self.update_favorite_icon(current_url_str)
 
     def show_tab_context_menu(self, pos):
         item = self.sidebar.itemAt(pos)
         menu = QMenu(self)
-
-        if item:
-            new_tab = menu.addAction("Ouvrir un nouvel onglet")
-            close_tab = menu.addAction("Fermer cet onglet")
-        else:
-            new_tab = menu.addAction("Ouvrir un nouvel onglet")
-            close_tab = None
+        new_tab_action = menu.addAction("Ouvrir un nouvel onglet")
+        close_tab_action = menu.addAction("Fermer cet onglet") if item else None
 
         action = menu.exec(self.sidebar.mapToGlobal(pos))
-
-        if action == new_tab:
+        if action == new_tab_action:
             self.open_new_tab()
-        elif close_tab and action == close_tab:
-            idx = self.sidebar.row(item)
-            self.close_tab(idx)
+        elif action == close_tab_action and item:
+            self.close_tab(self.sidebar.row(item))
 
-    def on_downloadRequested(self, download_item: QWebEngineDownloadRequest):
+    def on_downloadRequested(self, download_item):
         suggested = download_item.suggestedFileName() or "downloaded_file"
         downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
         os.makedirs(downloads_path, exist_ok=True)
@@ -845,95 +901,70 @@ class BrowserWindow(QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self, "Enregistrer le fichier", initial_save_path
         )
-
         if not path:
             download_item.cancel()
             return
 
         download_item.setDownloadFileName(path)
-
-        self.download_manager.add_download(download_item)
         download_item.accept()
+        self.download_manager.add_download(download_item)
 
     def open_current_url_in_app(self):
-        current_browser_widget = self.current_browser()
-        if current_browser_widget:
-            current_url = current_browser_widget.url().toString()
+        if browser := self.current_browser():
             try:
-                start_app(current_url)
+                new_window = start_app(browser.url().toString())
+                self.app_windows.append(new_window)
             except Exception as e:
-                pass
-        else:
-            pass
+                print(
+                    f"Erreur lors de l'ouverture dans l'application : {e}",
+                    file=sys.stderr,
+                )
 
 
 def path_to_uri(path):
-    path = os.path.abspath(path)
-    system = platform.system()
-
-    if system == "Windows":
-        path = path.replace("\\", "/")
-        if not path.startswith("/"):
-            path = "/" + path
-        uri = "file://" + path
-    elif system in ("Linux", "Darwin"):
-        uri = "file://" + path
-    else:
-        uri = "file://" + path
-    uri = quote(uri, safe=":/")
-    return uri
+    path = os.path.abspath(path).replace("\\", "/")
+    print(path)
+    return (
+        "file:///" + quote(path)
+        if sys.platform == "Windows"
+        else "file://" + quote(path)
+    )
 
 
 def is_url(string):
-    parsed = urlparse(string)
-    return parsed.scheme in ("http", "https")
-
-
-if __name__ == "__main__":
-    if len(sys.argv) <= 1:
-        window = BrowserWindow()
-        window.show()
-
-        if check_first_run():
-            window.open_welcome_tab()
-
-        if update_available:
-            window.open_update_tab()
-
-        application.exec()
-    else:
-        fichier = sys.argv[1]
-
-        if is_url(fichier):
-            start_app(fichier)
-        else:
-            if fichier.endswith(".html") or fichier.endswith(".cedapp"):
-                uri = path_to_uri(fichier)
-                start_app(uri)
-            else:
-                print("Fichier non supporté ou format inconnu.")
+    try:
+        parsed = urlparse(string)
+        return parsed.scheme in ("http", "https")
+    except Exception:
+        return False
 
 
 def main():
     if len(sys.argv) <= 1:
         window = BrowserWindow()
         window.show()
+        sys.exit(application.exec())
 
-        if check_first_run():
-            window.open_welcome_tab()
-
-        if update_available:
-            window.open_update_tab()
-
-        application.exec()
     else:
         fichier = sys.argv[1]
+        print(fichier)
+        app_window = None
 
         if is_url(fichier):
-            start_app(fichier)
+            app_window = start_app(fichier)
+        elif fichier.endswith((".html", ".cedapp")):
+            print(path_to_uri(fichier))
+            app_window = start_app(path_to_uri(fichier))
         else:
-            if fichier.endswith(".html") or fichier.endswith(".cedapp"):
-                uri = path_to_uri(fichier)
-                start_app(uri)
-            else:
-                print("Fichier non supporté ou format inconnu.")
+            print("Fichier non supporté ou format inconnu.")
+            sys.exit(1)
+
+        if app_window:
+            sys.exit(application.exec())
+
+
+if __name__ == "__main__":
+    application = QApplication.instance()
+    if not application:
+        application = QApplication(sys.argv)
+    main()

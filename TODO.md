@@ -1,19 +1,10 @@
 ## ✅ Task List importants
 
-- [ ] Besoin d'un logo (Vote pour natdev_1)
-- [ ] Lancement rapide du navigateur (Multithreading) 
+Vide
 
 ## ✅ Task List optionnels
 
 - [ ] [Sélection de thèmes](https://discord.com/channels/1213892868708503604/1213894739875725383/1391050183449514124) (Repo github avec `theme.cedzeetheme` au format json et `theme.css`)
-- [ ] Finaliser les cedapps:
-```
-MAXIMIZEBUTTON et MINIMIZEBUTTON
-CAPTION // affichage de la barre de titre
-SYSMENU // affichage des boutons réduire / fermer
-SHOWINTASKBAR // Affichage du programme dans la barre des tâches
-WINDOWSTATE // Réduit / Plein écran (mode F11) / normal
-```
 
 ## En cours : 
 
@@ -31,3 +22,6 @@ WINDOWSTATE // Réduit / Plein écran (mode F11) / normal
 - [X] système de téléchargements amélioré (slohwnix)
 - [X] paramètres
 - [X] page de bienvenue pour premier démarrage (slohwnix)
+- [X] Lancement rapide du navigateur (Multithreading) fait par slohwnix
+- [X] Besoin d'un logo (Logo par Natdev, implémentation par Slohwnix avec l'aide de Gens)
+- [X] Finaliser les cedapps

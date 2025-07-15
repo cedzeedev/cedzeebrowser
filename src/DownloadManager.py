@@ -12,7 +12,16 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QFrame,
 )
-from PyQt6.QtCore import Qt, QSize, QDateTime, QUrl, QTimer, pyqtSignal, QObject
+from PyQt6.QtCore import (
+    Qt,
+    QSize,
+    QDateTime,
+    QUrl,
+    pyqtSignal,
+    QObject,
+    QThread,
+    pyqtSlot,
+)
 from PyQt6.QtWebEngineCore import QWebEngineDownloadRequest
 from PyQt6.QtGui import QIcon, QDesktopServices
 
@@ -20,21 +29,79 @@ directory1 = os.path.dirname(os.path.abspath(__file__))
 directory = os.path.dirname(directory1)
 
 
-class DownloadItemWidget(QFrame):
-    def __init__(self, download_item: QWebEngineDownloadRequest, parent=None):
+class DownloadFileWorker(QObject):
+    history_loaded = pyqtSignal(list)
+    error = pyqtSignal(str)
+
+    def __init__(self, history_file_path):
+        super().__init__()
+        self.history_file_path = history_file_path
+
+    @pyqtSlot()
+    def load_history(self):
+        if not os.path.exists(self.history_file_path):
+            self.history_loaded.emit([])
+            return
+        try:
+            with open(self.history_file_path, "r", encoding="utf-8") as f:
+                history = json.load(f)
+            self.history_loaded.emit(history)
+        except (json.JSONDecodeError, Exception) as e:
+            self.error.emit(f"Erreur lors du chargement de l'historique: {e}")
+            self.history_loaded.emit([])
+
+    @pyqtSlot(list)
+    def save_history(self, history_data):
+        try:
+            os.makedirs(os.path.dirname(self.history_file_path), exist_ok=True)
+            with open(self.history_file_path, "w", encoding="utf-8") as f:
+                json.dump(history_data, f, indent=4)
+        except Exception as e:
+            self.error.emit(f"Erreur lors de la sauvegarde de l'historique: {e}")
+
+
+class DummyDownloadRequest(QObject):
+    stateChanged = pyqtSignal()
+
+    def __init__(self, filename, path, parent=None):
         super().__init__(parent)
+        self._filename = filename
+        self._path = path
+        self._state = QWebEngineDownloadRequest.DownloadState.DownloadCompleted
 
+    def downloadFileName(self):
+        return self._path
+
+    def state(self):
+        return self._state
+
+    def receivedBytes(self):
+        try:
+            return os.path.getsize(self._path) if os.path.exists(self._path) else 0
+        except OSError:
+            return 0
+
+    def totalBytes(self):
+        return self.receivedBytes()
+
+    def cancel(self):
+        pass
+
+
+class DownloadItemWidget(QFrame):
+    delete_requested = pyqtSignal(QWidget)
+
+    def __init__(self, download_item, parent=None):
+        super().__init__(parent)
         self.download_item = download_item
-        self.is_history_item = False
-        self.progress_timer = None
-
+        self.is_history_item = isinstance(download_item, DummyDownloadRequest)
         self.setObjectName("downloadItem")
 
         layout = QHBoxLayout(self)
-
         self.icon_label = QLabel()
         self.update_icon()
         layout.addWidget(self.icon_label)
+
         info_layout = QVBoxLayout()
         info_layout.setSpacing(2)
 
@@ -45,12 +112,13 @@ class DownloadItemWidget(QFrame):
         info_layout.addWidget(self.filename_label)
 
         self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 0)
         info_layout.addWidget(self.progress_bar)
 
         self.status_label = QLabel("Démarrage...")
         self.status_label.setObjectName("statusLabel")
         info_layout.addWidget(self.status_label)
+
+        info_layout.addStretch(1)
 
         layout.addLayout(info_layout)
         layout.setStretch(1, 1)
@@ -63,28 +131,20 @@ class DownloadItemWidget(QFrame):
         self.open_button = QPushButton("Ouvrir")
         self.open_button.setObjectName("Button")
         self.open_button.clicked.connect(self.open_file)
-        self.open_button.hide()
         layout.addWidget(self.open_button)
 
         self.delete_button = QPushButton("Supprimer")
         self.delete_button.setObjectName("Button")
         self.delete_button.clicked.connect(self.delete_item)
-        self.delete_button.hide()
         layout.addWidget(self.delete_button)
 
         self.setLayout(layout)
 
-        self.download_item.stateChanged.connect(self.update_state)
+        if not self.is_history_item:
+            self.download_item.stateChanged.connect(self.update_state)
+            self.download_item.receivedBytesChanged.connect(self.update_progress)
 
         self.update_state()
-
-        if (
-            self.download_item.state()
-            == QWebEngineDownloadRequest.DownloadState.DownloadInProgress
-        ):
-            self.progress_timer = QTimer(self)
-            self.progress_timer.timeout.connect(self._update_progress_from_properties)
-            self.progress_timer.start(500)
 
     def update_icon(self):
         style = self.style()
@@ -97,73 +157,84 @@ class DownloadItemWidget(QFrame):
     def update_state(self):
         state = self.download_item.state()
 
-        if state == QWebEngineDownloadRequest.DownloadState.DownloadInProgress:
-            self.status_label.setText("Téléchargement en cours...")
-            self.cancel_button.show()
-            self.open_button.hide()
-            self.delete_button.hide()
+        is_in_progress = (
+            state == QWebEngineDownloadRequest.DownloadState.DownloadInProgress
+        )
+        is_completed = (
+            state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted
+        )
+        is_finished = state in [
+            QWebEngineDownloadRequest.DownloadState.DownloadCompleted,
+            QWebEngineDownloadRequest.DownloadState.DownloadCancelled,
+            QWebEngineDownloadRequest.DownloadState.DownloadInterrupted,
+        ]
+
+        self.cancel_button.setVisible(is_in_progress)
+        self.open_button.setVisible(is_completed)
+        self.delete_button.setVisible(is_finished)
+
+        if is_in_progress:
             self.progress_bar.show()
-            self._update_progress_from_properties()
-            if self.progress_timer is None:
-                self.progress_timer = QTimer(self)
-                self.progress_timer.timeout.connect(
-                    self._update_progress_from_properties
-                )
-                self.progress_timer.start(500)
-        elif state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
+            self.status_label.show()
+            self.update_progress()
+        elif is_completed:
+            self.progress_bar.hide()
+            self.status_label.show()
             self.status_label.setText("Téléchargement terminé")
-            self.progress_bar.setRange(0, 100)
-            self.progress_bar.setValue(100)
+        elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
+            self.progress_bar.hide()
+            self.status_label.show()
+            self.status_label.setText("Téléchargement annulé")
+        elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
+            self.progress_bar.hide()
+            self.status_label.show()
+            self.status_label.setText("Téléchargement interrompu")
+
+        if self.is_history_item:
+            self.progress_bar.hide()
             self.cancel_button.hide()
             self.open_button.show()
             self.delete_button.show()
-            self.progress_bar.hide()
-            if self.progress_timer:
-                self.progress_timer.stop()
-                self.progress_timer.deleteLater()
-                self.progress_timer = None
-            if not self.is_history_item:
-                parent_manager = self.parentWidget()
-                while parent_manager is not None and not isinstance(
-                    parent_manager, DownloadManager
-                ):
-                    parent_manager = parent_manager.parentWidget()
-                if isinstance(parent_manager, DownloadManager):
-                    parent_manager.save_completed_download(self.download_item)
-        elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
-            self.status_label.setText("Téléchargement annulé")
-            self.progress_bar.hide()
-            self.cancel_button.hide()
-            self.open_button.hide()
-            self.delete_button.show()
-            if self.progress_timer:
-                self.progress_timer.stop()
-                self.progress_timer.deleteLater()
-                self.progress_timer = None
-        elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
-            self.status_label.setText("Téléchargement interrompu")
-            self.cancel_button.hide()
-            self.open_button.hide()
-            self.delete_button.show()
-            if self.progress_timer:
-                self.progress_timer.stop()
-                self.progress_timer.deleteLater()
-                self.progress_timer = None
 
-    def _update_progress_from_properties(self):
+        if is_finished and not self.is_history_item:
+            try:
+                self.download_item.stateChanged.disconnect(self.update_state)
+                self.download_item.receivedBytesChanged.disconnect(self.update_progress)
+            except TypeError:
+                pass
+
+    def update_progress(self):
+        if (
+            self.download_item.state()
+            != QWebEngineDownloadRequest.DownloadState.DownloadInProgress
+        ):
+            return
+
         bytes_received = self.download_item.receivedBytes()
         bytes_total = self.download_item.totalBytes()
 
+        received_mb = bytes_received / (1024 * 1024)
+
         if bytes_total > 0:
+            total_mb = bytes_total / (1024 * 1024)
+            percentage = int(bytes_received * 100 / bytes_total)
             self.progress_bar.setRange(0, 100)
-            self.progress_bar.setValue(int(bytes_received * 100 / bytes_total))
+            self.progress_bar.setValue(percentage)
             self.status_label.setText(
-                f"Téléchargé {bytes_received / (1024*1024):.2f} Mo / {bytes_total / (1024*1024):.2f} Mo"
+                f"Téléchargé {received_mb:.2f} Mo / {total_mb:.2f} Mo"
             )
         else:
-            self.progress_bar.setRange(0, 0)
+            self.progress_bar.setRange(0, 100)
+            self.progress_bar.setValue(0)
+            self.status_label.setText(f"Téléchargé {received_mb:.2f} Mo")
 
     def cancel_download(self):
+        self.progress_bar.hide()
+        self.status_label.setText("Téléchargement annulé")
+        self.cancel_button.hide()
+        self.open_button.hide()
+        self.delete_button.show()
+
         self.download_item.cancel()
 
     def open_file(self):
@@ -176,34 +247,12 @@ class DownloadItemWidget(QFrame):
             )
 
     def delete_item(self):
-        parent_list_widget = self.parentWidget()
-        while parent_list_widget is not None and not isinstance(
-            parent_list_widget, QListWidget
-        ):
-            parent_list_widget = parent_list_widget.parentWidget()
-
-        if isinstance(parent_list_widget, QListWidget):
-            for i in range(parent_list_widget.count()):
-                item = parent_list_widget.item(i)
-                if parent_list_widget.itemWidget(item) is self:
-                    row = i
-                    parent_list_widget.takeItem(row)
-                    break
-
-            if self.is_history_item:
-                parent_manager = parent_list_widget.parentWidget()
-                while parent_manager is not None and not isinstance(
-                    parent_manager, DownloadManager
-                ):
-                    parent_manager = parent_manager.parentWidget()
-                if isinstance(parent_manager, DownloadManager):
-                    parent_manager.remove_history_item(
-                        self.download_item.downloadFileName()
-                    )
+        self.delete_requested.emit(self)
 
 
 class DownloadManager(QWidget):
     DOWNLOAD_HISTORY_FILE = f"{directory}/resources/saves/download_history.json"
+    request_save_history = pyqtSignal(list)
 
     def __init__(self, parent=None):
         super().__init__(parent, Qt.WindowType.Window)
@@ -211,13 +260,30 @@ class DownloadManager(QWidget):
         self.setMinimumSize(500, 300)
 
         self.completed_downloads_history = []
+        self.active_download_items = {}
 
         self.list_widget = QListWidget()
         self.list_widget.setObjectName("downloadListWidget")
+
         self.main_layout = QVBoxLayout(self)
         self.main_layout.addWidget(self.list_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
+
+        self.apply_stylesheet()
+
+        self.worker_thread = QThread()
+        self.file_worker = DownloadFileWorker(self.DOWNLOAD_HISTORY_FILE)
+        self.file_worker.moveToThread(self.worker_thread)
+
+        self.worker_thread.started.connect(self.file_worker.load_history)
+        self.file_worker.history_loaded.connect(self.on_history_loaded)
+        self.file_worker.error.connect(self.on_worker_error)
+        self.request_save_history.connect(self.file_worker.save_history)
+
+        self.worker_thread.start()
+
+    def apply_stylesheet(self):
         try:
             css_path = os.path.abspath(f"{directory}/theme/theme.css")
             if os.path.exists(css_path):
@@ -227,142 +293,93 @@ class DownloadManager(QWidget):
                 print(f"Fichier CSS non trouvé : {css_path}")
         except Exception as e:
             print(f"Impossible de charger le thème pour DownloadManager: {e}")
-        os.makedirs(os.path.dirname(self.DOWNLOAD_HISTORY_FILE), exist_ok=True)
-        self.load_download_history()
 
+    @pyqtSlot(QWebEngineDownloadRequest)
     def add_download(self, download_item: QWebEngineDownloadRequest):
-        for i in range(self.list_widget.count()):
-            item_widget = self.list_widget.itemWidget(self.list_widget.item(i))
-            if (
-                isinstance(item_widget, DownloadItemWidget)
-                and item_widget.download_item is download_item
-            ):
-                return
+        if download_item in self.active_download_items:
+            return
+
+        download_item.stateChanged.connect(
+            lambda state, di=download_item: self.on_download_state_changed(state, di)
+        )
 
         download_widget = DownloadItemWidget(download_item)
+        download_widget.delete_requested.connect(self.remove_item_widget)
+        self.active_download_items[download_item] = download_widget
+
         list_item = QListWidgetItem(self.list_widget)
         list_item.setSizeHint(download_widget.sizeHint())
         self.list_widget.insertItem(0, list_item)
         self.list_widget.setItemWidget(list_item, download_widget)
+
         self.show()
 
-    def save_completed_download(self, download_item: QWebEngineDownloadRequest):
-        file_path = download_item.downloadFileName()
+    def on_download_state_changed(self, state, download_item):
+        if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
+            file_path = download_item.downloadFileName()
+            if os.path.exists(file_path):
+                download_info = {
+                    "filename": os.path.basename(file_path),
+                    "path": file_path,
+                    "timestamp": QDateTime.currentDateTime().toString(
+                        Qt.DateFormat.ISODate
+                    ),
+                }
+                if not any(
+                    item["path"] == download_info["path"]
+                    for item in self.completed_downloads_history
+                ):
+                    self.completed_downloads_history.append(download_info)
+                    self.request_save_history.emit(self.completed_downloads_history)
 
-        if os.path.exists(file_path):
-            download_info = {
-                "filename": os.path.basename(file_path),
-                "path": file_path,
-                "timestamp": QDateTime.currentDateTime().toString(
-                    Qt.DateFormat.ISODate
-                ),
-            }
-            if not any(
-                item["path"] == download_info["path"]
+        if state in [
+            QWebEngineDownloadRequest.DownloadState.DownloadCompleted,
+            QWebEngineDownloadRequest.DownloadState.DownloadCancelled,
+            QWebEngineDownloadRequest.DownloadState.DownloadInterrupted,
+        ]:
+            if download_item in self.active_download_items:
+                del self.active_download_items[download_item]
+
+    @pyqtSlot(list)
+    def on_history_loaded(self, history):
+        self.completed_downloads_history = history
+        for item_info in reversed(self.completed_downloads_history):
+            dummy_item = DummyDownloadRequest(
+                item_info["filename"], item_info["path"], self
+            )
+
+            widget = DownloadItemWidget(dummy_item)
+            widget.delete_requested.connect(self.remove_item_widget)
+            widget.status_label.setText(f"Terminé le {item_info['timestamp']}")
+
+            list_item = QListWidgetItem(self.list_widget)
+            list_item.setSizeHint(widget.sizeHint())
+            self.list_widget.addItem(list_item)
+            self.list_widget.setItemWidget(list_item, widget)
+
+    @pyqtSlot(QWidget)
+    def remove_item_widget(self, widget_to_remove):
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            widget = self.list_widget.itemWidget(item)
+            if widget is widget_to_remove:
+                self.list_widget.takeItem(i)
+                break
+
+        if widget_to_remove.is_history_item:
+            path_to_remove = widget_to_remove.download_item.downloadFileName()
+            self.completed_downloads_history = [
+                item
                 for item in self.completed_downloads_history
-            ):
-                self.completed_downloads_history.append(download_info)
-                self._save_history_to_file()
-        else:
-            print(
-                f"Avertissement: Le fichier {file_path} n'existe pas après le téléchargement. Il se peut qu'il ait été déplacé ou que le chemin ne soit pas encore à jour."
-            )
+                if item["path"] != path_to_remove
+            ]
+            self.request_save_history.emit(self.completed_downloads_history)
 
-    def load_download_history(self):
-        if os.path.exists(self.DOWNLOAD_HISTORY_FILE):
-            try:
-                with open(self.DOWNLOAD_HISTORY_FILE, "r", encoding="utf-8") as f:
-                    self.completed_downloads_history = json.load(f)
+    @pyqtSlot(str)
+    def on_worker_error(self, message):
+        print(message)
 
-                for item_info in self.completed_downloads_history:
-
-                    class DummyDownloadRequest(QObject):
-                        stateChanged = pyqtSignal()
-                        bytesReceived = pyqtSignal(int, int)
-
-                        def __init__(self, filename, path, parent=None):
-                            super().__init__(parent)
-                            self._filename = filename
-                            self._path = path
-                            self._state = (
-                                QWebEngineDownloadRequest.DownloadState.DownloadCompleted
-                            )
-                            self.stateChanged.emit()
-                            self.bytesReceived.emit(
-                                self.receivedBytes(), self.totalBytes()
-                            )
-
-                        def downloadFileName(self):
-                            return self._path
-
-                        def downloadDirectory(self):
-                            return os.path.dirname(self._path)
-
-                        def state(self):
-                            return self._state
-
-                        def cancel(self):
-                            pass
-
-                        def receivedBytes(self):
-                            return (
-                                os.path.getsize(self._path)
-                                if os.path.exists(self._path)
-                                else 0
-                            )
-
-                        def totalBytes(self):
-                            return (
-                                os.path.getsize(self._path)
-                                if os.path.exists(self._path)
-                                else 0
-                            )
-
-                    dummy_download_item = DummyDownloadRequest(
-                        item_info["filename"], item_info["path"], parent=self
-                    )
-
-                    download_widget = DownloadItemWidget(dummy_download_item)
-                    download_widget.is_history_item = True
-                    download_widget.progress_timer = None
-
-                    download_widget.cancel_button.hide()
-                    download_widget.progress_bar.hide()
-                    download_widget.open_button.show()
-                    download_widget.delete_button.show()
-                    download_widget.status_label.setText(
-                        f"Terminé le {item_info['timestamp']}"
-                    )
-
-                    list_item = QListWidgetItem(self.list_widget)
-                    list_item.setSizeHint(download_widget.sizeHint())
-                    self.list_widget.addItem(list_item)
-                    self.list_widget.setItemWidget(list_item, download_widget)
-
-            except json.JSONDecodeError as e:
-                print(
-                    f"Erreur lors du chargement de l'historique des téléchargements: {e}"
-                )
-                self.completed_downloads_history = []
-            except Exception as e:
-                print(
-                    f"Une erreur inattendue est survenue lors du chargement de l'historique: {e}"
-                )
-                self.completed_downloads_history = []
-
-    def remove_history_item(self, file_path_to_remove: str):
-        self.completed_downloads_history = [
-            item
-            for item in self.completed_downloads_history
-            if item["path"] != file_path_to_remove
-        ]
-        self._save_history_to_file()
-
-    def _save_history_to_file(self):
-        try:
-            with open(self.DOWNLOAD_HISTORY_FILE, "w", encoding="utf-8") as f:
-                json.dump(self.completed_downloads_history, f, indent=4)
-        except Exception as e:
-            print(
-                f"Erreur lors de la sauvegarde de l'historique des téléchargements: {e}"
-            )
+    def closeEvent(self, event):
+        self.worker_thread.quit()
+        self.worker_thread.wait()
+        super().closeEvent(event)
