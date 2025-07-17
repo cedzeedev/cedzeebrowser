@@ -1,75 +1,77 @@
 
 # TODO
 
-## ✅ Task List importants
+## ✅/❌ Important Task List
 
-### Les extensions
+### Extensions
 
 ```txt
 extensions
- |
- |---- Mon Extension
- |     |
- |     |---- "autres dossiers/fichiers utile à l'extension"
- |     |---- extension.ico
+ |---- My Extension
+ |     |---- "other folders/files"
  |     |---- config.json
+ |     |---- extension.ico
  |     |---- main.js 
 ```
 
-1. Le fichier **config.json**
+#### The **config.json** file
 
 ```json
 {
-  // Auteur
-  "author": "Nom",
-  // Descrition
-  "description": "Utile et super cool :)",
-  // Version MAJEUR.mineur.patch
+  // Author
+  "author": "Name",
+  // Description
+  "description": "Useful and super cool :)",
+  // Version MAJOR.minor.patch
   "version": "1.0.0",
-  // Désactivation totale
+  // Disabled
   "disabled": false,
-  // Désactivation pour un site
+  // Enabled for website
+  "enabled_for": [],
+  // Disabled for website
   "disabled_for": [
     "http://site.com"
   ]
 }
 ```
 
-2. Le fichier **main.js**
+#### The **main.js** file
 
 ```js
-import { Dependences } from "autres_fichiers_utile_a_l_extension.js"
+import { Dependencies } from "extern_file.js"
 
 window.addEventListener("load", function (event) => {
-  // Le code
+
+  // code here
+
 });
 ```
 
-3. Et enfin on l'injecte le **main.js** dans les pages web:
+#### And finally we inject the **main.js** into web pages
 
 ```html
-<script src="/../extention.js" type="module"></script>
+<script src="/../extension.js" type="module"></script>
 ```
 
-## ✅ Task List optionnels
+## ✅/❌ Optional Task List
 
-- [ ] [Sélection de thèmes](https://discord.com/channels/1213892868708503604/1213894739875725383/1391050183449514124) (Repo github avec `theme.cedzeetheme` au format json et `theme.css`)
+- [ ] [Themes](https://discord.com/channels/1213892868708503604/1213894739875725383/1391050183449514124) (Repo github avec `theme.cedzeetheme` au format json et `theme.css`)
 
-## En cours : 
+## 🧑‍💻 In progress
 
 - [ ] extension (all)
 
-## Fait : 
+## ✅ Done
 
-- [X] favoris (slohwnix)
+- [X] Favoris (slohwnix)
 - [X] cedzee:// (Slohwnix)
 - [X] Refaire le style de `history.html` (slohwnix)
 - [X] Afficher la date et l'heure dans l'historique (slohwnix)
 - [X] Ouvrir un onglet dans une application (slohwnix)
-- [X] nouveaux système de mise à jour (slohwnix)
-- [X] système de téléchargements amélioré (slohwnix)
-- [X] paramètres
-- [X] page de bienvenue pour premier démarrage (slohwnix)
+- [X] Nouveaux système de mise à jour (slohwnix)
+- [X] Système de téléchargements amélioré (slohwnix)
+- [X] Paramètres
+- [X] Page de bienvenue pour premier démarrage (slohwnix)
 - [X] Lancement rapide du navigateur (Multithreading) fait par slohwnix
 - [X] Besoin d'un logo (Logo par Natdev, implémentation par Slohwnix avec l'aide de Gens)
 - [X] Finaliser les cedapps

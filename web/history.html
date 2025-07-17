@@ -2,7 +2,9 @@
 <html lang="fr">
 
 <head>
+
     <meta charset="UTF-8">
+
     <title>Historique de navigation</title>
     <style>
         *,
@@ -214,9 +216,11 @@
             background: #e9e9e9;
         }
     </style>
+
 </head>
 
 <body>
+
     <div class="header-items"> <button id="theme-toggle">Changer de thème</button> </div>
 
     <h1>Historique de navigation</h1>
@@ -239,7 +243,7 @@
         fetch('../resources/saves/history.csv')
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Le fichier history.csv est introuvable (HTTP ${response.status})`);
+                    throw new Error(`The file history.csv is not found (HTTP ${response.status})`);
                 }
                 return response.text();
             })
@@ -247,7 +251,7 @@
                 try {
                     const lines = data.trim().split('\n').filter(line => line);
                     if (lines.length === 0 && data.length > 0) {
-                        throw new Error("Le fichier d'historique est vide ou mal formaté.");
+                        throw new Error("The history file is empty or incorrectly formatted.");
                     }
 
                     lines.reverse();
@@ -256,7 +260,7 @@
                     lines.forEach(line => {
                         const parts = line.split(',');
                         if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) {
-                            throw new Error(`Ligne mal formatée : "${line}"`);
+                            throw new Error(`Malformed line : "${line}"`);
                         }
 
                         const timestampStr = parts[0].trim();
@@ -265,7 +269,7 @@
 
                         const dateObj = new Date(timestampStr);
                         if (isNaN(dateObj.getTime())) {
-                            throw new Error(`Date invalide pour la ligne : "${line}"`);
+                            throw new Error(`Invalid date for the line : "${line}"`);
                         }
 
                         const entryDate = dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -306,16 +310,16 @@
                         historyList.appendChild(listItem);
                     });
 
-                } catch (error) {
-                    console.error("Erreur de validation de l'historique:", error.message);
+                } catch (e) {
+                    console.error(`Validation error of the history: ${e.message}`);
                     mainTitle.classList.add('hidden');
                     historyList.classList.add('hidden');
                     themeToggle.classList.add('hidden');
                     errorContainer.classList.remove('hidden');
                 }
             })
-            .catch(error => {
-                console.error("Erreur de chargement de l'historique:", error.message);
+            .catch(e => {
+                console.error(`Error while loading history: ${e.message}`);
                 mainTitle.classList.add('hidden');
                 historyList.classList.add('hidden');
                 themeToggle.classList.add('hidden');
@@ -325,15 +329,18 @@
 
         const body = document.body;
         const savedTheme = localStorage.getItem('theme');
+
         if (savedTheme === 'light') {
             body.classList.add('light-mode');
         }
+
         themeToggle.addEventListener('click', () => {
             body.classList.toggle('light-mode');
             const currentTheme = body.classList.contains('light-mode') ? 'light' : 'dark';
             localStorage.setItem('theme', currentTheme);
         });
     </script>
+
 </body>
 
 </html>

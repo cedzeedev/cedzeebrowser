@@ -12,7 +12,7 @@ resources = [
     ("web", "web"),
     ("offline", "offline"),
     ("version.json", "."),
-    ("src", "src"),
+    ("src", "src")
 ]
 
 args = [
@@ -23,15 +23,17 @@ args = [
     "--clean",
     "--distpath=build_win",
     "--workpath=build/build",
-    "--specpath=build/specs",
+    "--specpath=build/specs"
 ]
 
 for src, dest in resources:
     full_src = os.path.abspath(src)
     args.append(f"--add-data={full_src}{separator}{dest}")
+
 build_cache_dir = os.path.abspath("build")
+
 if os.path.exists(build_cache_dir):
-    print(f"Suppression du dossier cache {build_cache_dir}...")
+    print(f"[INFO]: Deleting the cache folder {build_cache_dir}...")
     shutil.rmtree(build_cache_dir)
 
 PyInstaller.__main__.run(args)

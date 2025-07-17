@@ -2,6 +2,7 @@
 <html lang="fr">
 
 <head>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta cedzeeapp_horizontal="1000">
@@ -128,7 +129,7 @@
             });
 
             function setButtonToManualInstall() {
-                updateBtn.textContent = 'Mise à jour détectée – installez manuellement';
+                updateBtn.textContent = 'Mise à jour détectée - installez manuellement';
                 updateBtn.disabled = true;
                 updateBtn.onclick = null;
             }
@@ -175,7 +176,7 @@
                 clearCookiesBtn.addEventListener('click', () => cedzeebrowser.clearCookies());
                 clearCacheBtn.addEventListener('click', () => cedzeebrowser.clearCache());
                 clearAllDataBtn.addEventListener('click', () => {
-                    if (confirm("Voulez-vous vraiment effacer toutes les données de navigation (cookies, cache, etc.) ? Cela ne supprimera pas l'historique ou les favoris.")) {
+                    if (confirm("Voulez-vous vraiment effacer toutes les données de navigation (cookies, cache, etc.)? Cela ne supprimera pas l'historique ou les favoris.")) {
                         cedzeebrowser.ClearAll();
                     }
                 });

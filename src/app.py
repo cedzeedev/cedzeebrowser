@@ -2,7 +2,6 @@ import os
 import sys
 import csv
 import json
-import platform
 import ctypes
 import requests
 from urllib.parse import urlparse, quote
@@ -30,7 +29,6 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import (
     QWebEngineProfile,
     QWebEnginePage,
-    QWebEngineDownloadRequest,
     QWebEngineCertificateError,
     QWebEngineUrlRequestInterceptor,
     QWebEngineUrlRequestInfo,
@@ -54,14 +52,15 @@ from PyQt6.QtWidgets import (
 )
 
 if sys.platform == "win32":
-    myappid = "Cedzeedev.Cedzeebrowser.release.1_0"
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+        "Cedzeedev.Cedzeebrowser.release.1_0"
+    )
 
 
 def message_handler(mode, context, message):
     if "QWindowsWindow::setGeometry" in message:
         return
-    print(message, file=sys.stderr)
+    print(f"[ERROR]: message", file=sys.stderr)
 
 
 qInstallMessageHandler(message_handler)
@@ -82,8 +81,10 @@ application = QApplication.instance()
 if not application:
     application = QApplication(sys.argv)
 
-directory1 = os.path.dirname(os.path.abspath(__file__))
-directory = os.path.dirname(directory1)
+# Directory
+directory = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
 
 home_url = os.path.abspath(f"{directory}/web/index.html")
 history_page_url = os.path.abspath(f"{directory}/web/history.html")
@@ -288,7 +289,7 @@ class BrowserWindow(QMainWindow):
         try:
             self.setWindowIcon(QIcon(icon_path))
         except Exception as e:
-            print(f"Erreur lors du chargement de l'icône : {e}")
+            print(f"[ERROR]: Error loading the icon : {e}")
 
         self.app_windows = []
 
@@ -351,7 +352,7 @@ class BrowserWindow(QMainWindow):
             with open(css_path, "r") as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
-            print("theme.css not found.")
+            print("[ERROR]: theme.css not found.")
 
         self.add_homepage_tab()
         self.start_background_tasks()
@@ -411,7 +412,7 @@ class BrowserWindow(QMainWindow):
         )
         self.profile.setUrlRequestInterceptor(self.request_interceptor)
         print(
-            f"[AdBlock] {len(self.ad_block_list)} domaines chargés dans la liste de blocage."
+            f"[ADBLOCK]: {len(self.ad_block_list)} domains loaded in the block list."
         )
 
     def contextMenuEvent(self, event):
@@ -555,7 +556,7 @@ class BrowserWindow(QMainWindow):
 
     def toggle_ad_blocker(self):
         self.ad_blocker_enabled = not self.ad_blocker_enabled
-        print(f"Bloqueur de pub {'activé' if self.ad_blocker_enabled else 'désactivé'}")
+        print(f"[ADBLOCK]: Ad blocker {'enabled' if self.ad_blocker_enabled else 'disabled'}")
         self.update_ad_blocker_button_ui()
         if self.current_browser():
             self.current_browser().reload()
@@ -658,7 +659,7 @@ class BrowserWindow(QMainWindow):
         channel.registerObject("cedzeebrowser", bridge)
         browser.page().setWebChannel(channel)
         bridge.settingChanged.connect(
-            lambda k, v: print(f"Setting '{k}' mis à jour en '{v}'")
+            lambda k, v: print(f"[INFO]: Setting '{k}' update on '{v}'")
         )
 
     def _create_and_configure_browser_tab(self, initial_url: QUrl):
@@ -916,14 +917,14 @@ class BrowserWindow(QMainWindow):
                 self.app_windows.append(new_window)
             except Exception as e:
                 print(
-                    f"Erreur lors de l'ouverture dans l'application : {e}",
+                    f"[ERROR]: Error when opening in the application : {e}",
                     file=sys.stderr,
                 )
 
 
 def path_to_uri(path):
     path = os.path.abspath(path).replace("\\", "/")
-    print(path)
+    print(f"[INFO]: {path=}")
     return (
         "file:///" + quote(path)
         if sys.platform == "Windows"
@@ -946,17 +947,17 @@ def main():
         sys.exit(application.exec())
 
     else:
-        fichier = sys.argv[1]
-        print(fichier)
+        file = sys.argv[1]
+        print(file)
         app_window = None
 
-        if is_url(fichier):
-            app_window = start_app(fichier)
-        elif fichier.endswith((".html", ".cedapp")):
-            print(path_to_uri(fichier))
-            app_window = start_app(path_to_uri(fichier))
+        if is_url(file):
+            app_window = start_app(file)
+        elif file.endswith((".html", ".cedapp")):
+            print(path_to_uri(file))
+            app_window = start_app(path_to_uri(file))
         else:
-            print("Fichier non supporté ou format inconnu.")
+            print("[ERROR]: Unsupported file or unknown format.")
             sys.exit(1)
 
         if app_window:

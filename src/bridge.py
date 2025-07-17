@@ -3,10 +3,9 @@ import os
 import base64
 import shutil
 import platform
-import re
 from src.Update import update_all
 from functools import wraps
-from urllib.parse import urlparse, urlunparse, quote
+from urllib.parse import quote
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QVariant
 from PyQt6.QtWebEngineCore import QWebEngineProfile
 from PyQt6.QtWebEngineCore import QWebEnginePage
@@ -16,14 +15,17 @@ try:
     import requests
 except ImportError:
     print(
-        "error: requests library not installed. Please install it using 'pip install requests'."
+        "[ERROR]: requests library not installed. Please install it using 'pip install requests'."
     )
     requests = None
 
-directory1 = os.path.dirname(os.path.abspath(__file__))
-directory = os.path.dirname(directory1)
-CONFIG_FILE = f"{directory}/resources/config.json"
+# Directory
+directory = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
 
+
+CONFIG_FILE = f"{directory}/resources/config.json"
 
 def path_to_uri(path):
     path = os.path.abspath(path)
@@ -46,7 +48,7 @@ def require_local_url(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         if not self.web_page:
-            print("⚠️ web_page non défini.")
+            print("[WARN]: web page not defined.")
             return None
         url = self.web_page.url().toString()
         if not url.startswith(path_to_uri(directory)):
@@ -142,9 +144,9 @@ class CedzeeBridge(QObject):
     def update(self):
         try:
             update_all()
-            print("✅ update_all() lancée avec succès")
+            print("[INFO]: update_all() launched successfully")
         except Exception as e:
-            print(f"❌ Erreur lors de la mise à jour : {e}")
+            print(f"[ERROR]: Error during the update : {e}")
 
     @pyqtSlot(result=str)
     @require_local_url
@@ -185,7 +187,7 @@ class CedzeeBridge(QObject):
                         shutil.rmtree(f"{directory}/resources/saves")
                         shutil.rmtree(f"{directory}/resources/config")
                         shutil.rmtree(f"{directory}/resources/saves")
-            print("Données supprimés avec succès")
+            print("[INFO]: Data deleted successfully")
 
     @pyqtSlot(result=str)
     @require_local_url
@@ -195,17 +197,17 @@ class CedzeeBridge(QObject):
         try:
             with open(version_file_pth, "r", encoding="utf-8") as file:
                 data = json.load(file)
-            version = data[0].get("version", "inconnue")
+            version = data[0].get("version", "unknown")
         except Exception as e:
-            print(f"Erreur lors du chargement de la version : {e}")
-            version = "inconnue"
+            print(f"[ERROR]: Error while loading version : {e}")
+            version = "unknown"
 
         def get_online_version():
             try:
                 response = requests.get(version_json_url, timeout=10)
                 response.raise_for_status()
                 data = response.json()
-                return data[0].get("version", "inconnue")
+                return data[0].get("version", "unknown")
             except Exception:
                 return "error"
 
@@ -239,8 +241,8 @@ class CedzeeBridge(QObject):
         try:
             with open(version_file_pth, "r", encoding="utf-8") as file:
                 data = json.load(file)
-            version = data[0].get("version", "inconnue")
+            version = data[0].get("version", "unknown")
         except Exception as e:
-            print(f"Erreur lors du chargement de la version : {e}")
-            version = "inconnue"
+            print(f"[ERROR]: Error while loading version : {e}")
+            version = "unknown"
         return version

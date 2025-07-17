@@ -1,7 +1,6 @@
 import os
 import sys
 import csv
-import json
 import traceback
 from datetime import datetime
 import requests
@@ -48,8 +47,11 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--enable-native-gpu-memory-buffers"
 )
 
-directory1 = os.path.dirname(os.path.abspath(__file__))
-directory = os.path.dirname(directory1)
+# Directory
+directory = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
+
 
 home_url = "https://www.youtube.com"
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
@@ -62,7 +64,7 @@ favorites_url = os.path.abspath(f"{directory}/web/favorites.html")
 
 Window_width = 1200
 Window_height = 800
-Window_Title = "Cedzee Browser"
+Window_Title = "CEDZEE Browser"
 
 CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
 
@@ -124,7 +126,7 @@ class CustomWebEnginePage(QWebEnginePage):
                 self.setUrl(QUrl.fromLocalFile(real_path))
             else:
                 print(
-                    f"Unknown cedzee:// path: {url.toString()}. Loading home.",
+                    f"[ERROR]: Unknown cedzee:// path: {url.toString()}. Loading home.",
                     file=sys.stderr,
                 )
                 self.setUrl(QUrl.fromLocalFile(home_url))
@@ -133,7 +135,7 @@ class CustomWebEnginePage(QWebEnginePage):
 
     def certificateError(self, certificate_error: QWebEngineCertificateError):
         print(
-            f"Erreur de certificat détectée pour {certificate_error.url().toString()}: {certificate_error.errorDescription()}",
+            f"[ERROR]: Certificate error detected for {certificate_error.url().toString()}: {certificate_error.errorDescription()}",
             file=sys.stderr,
         )
         return True
@@ -171,7 +173,7 @@ class BrowserWindow(QMainWindow):
             ) as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
-            print("theme.css not found.")
+            print("[ERROR]: theme.css not found.")
 
         self.browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, self.browser, browser_window=self)
@@ -195,7 +197,7 @@ class BrowserWindow(QMainWindow):
         channel.registerObject("cedzeebrowser", bridge)
         browser.page().setWebChannel(channel)
         bridge.settingChanged.connect(
-            lambda k, v: print(f"Setting '{k}' mis à jour en '{v}'")
+            lambda k, v: print(f"[INFO]: Setting '{k}' updated on '{v}'")
         )
 
     def go_home(self):
@@ -233,7 +235,7 @@ class BrowserWindow(QMainWindow):
     def _handle_internet_check_result(self, is_available):
         if not is_available:
             print(
-                "Pas de connexion Internet détectée. Affichage page offline.",
+                "[INFO]: No Internet connection detected. Displaying offline page.",
                 file=sys.stderr,
             )
             self.browser.setUrl(QUrl.fromLocalFile(offline_url))
@@ -255,7 +257,7 @@ class BrowserWindow(QMainWindow):
                     [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), url_str, title]
                 )
         except Exception as e:
-            print(f"Erreur lors de l'écriture dans l'historique : {e}")
+            print(f"[ERROR]: Error while writing to history : {e}")
 
     def save_to_history(self, url_str: str, title: str):
         if not (
@@ -304,7 +306,7 @@ class BrowserWindow(QMainWindow):
 
         def done(state):
             if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
-                print(f"Téléchargement terminé : {path}")
+                print(f"[INFO]: Download complete : {path}")
 
         download_item.stateChanged.connect(done)
 
@@ -442,7 +444,7 @@ def perform_initial_load(url):
                     try:
                         data[key] = int(value)
                     except ValueError:
-                        print(f"Invalid value for {attr_name}: {value}")
+                        print(f"[ERROR]: Invalid value for {attr_name}: {value}")
                 else:
                     data[key] = value
 
@@ -464,7 +466,7 @@ def start_app(url: str):
     worker.finished.connect(worker.deleteLater)
     thread.finished.connect(thread.deleteLater)
     worker.result.connect(window.finalize_initial_load)
-    worker.error.connect(lambda e: print(f"Erreur dans le thread de chargement: {e}"))
+    worker.error.connect(lambda e: print(f"[ERROR]: Error in the loading thread: {e}"))
 
     thread.start()
 
@@ -481,10 +483,10 @@ if __name__ == "__main__":
         arg_path = sys.argv[1]
         if os.path.exists(arg_path):
             initial_load_url = QUrl.fromLocalFile(os.path.abspath(arg_path)).toString()
-            print(f"Tentative de chargement du fichier local: {initial_load_url}")
+            print(f"[INFO]: Attempt to load the local file: {initial_load_url}")
         else:
             print(
-                f"L'argument fourni '{arg_path}' n'est pas un chemin de fichier valide. Chargement de l'URL d'accueil par défaut."
+                f"[INFO]: The argument provided '{arg_path}' is not a valid file path. Loading the default homepage URL."
             )
 
     main_window = start_app(initial_load_url)

@@ -1,14 +1,14 @@
 import os
 import sys
 import shutil
-import zipfile
 from dulwich import porcelain
 from pathlib import Path
-import requests
-import subprocess
 
-directory1 = os.path.dirname(os.path.abspath(__file__))
-directory = os.path.dirname(directory1)
+# Directory
+directory = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
+
 path_dir = Path(directory)
 src_dir = os.path.join(directory, "update_files")
 dst_dir = directory
@@ -30,7 +30,7 @@ def update_all():
     version_file = os.path.join(dst_dir, "version.json")
     if os.path.exists(version_file):
         os.remove(version_file)
-        print(f"[update] Supprimé : {version_file}")
+        print(f"[UPDATE]: Deleted : {version_file}")
 
     if os.path.isdir(src_dir):
         shutil.rmtree(src_dir, ignore_errors=True)
@@ -39,14 +39,14 @@ def update_all():
 
     if not os.path.isdir(src_dir):
         raise FileNotFoundError(
-            f"Le dossier source '{src_dir}' est introuvable après clonage."
+            f"The source file '{src_dir}' is missing after cloning."
         )
 
     for folder in FOLDERS_TO_REMOVE:
         folder_path = os.path.join(dst_dir, folder)
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path, ignore_errors=True)
-            print(f"[update] Supprimé : {folder_path}")
+            print(f"[UPDATE]: Deleted : {folder_path}")
 
     for root, dirs, files in os.walk(src_dir):
         rel_root = os.path.relpath(root, src_dir)
@@ -72,10 +72,6 @@ def update_all():
 
     shutil.rmtree(src_dir, ignore_errors=True)
 
-    print("[update] Update ended.")
-    print("[update] Closing...")
+    print("[UPDATE]: Update ended.")
+    print("[UPDATE]: Closing...")
     sys.exit(1)
-
-
-if __name__ == "__main__":
-    print("[error] : you can't start this lib")

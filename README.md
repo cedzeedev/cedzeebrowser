@@ -1,7 +1,7 @@
 
 # CEDZEE Browser
 
-## Powerful browser
+## ✨ Powerful browser
 
 >
 > ![image](resources/github/image.png)
@@ -9,7 +9,7 @@
 
 ---
 
-## Utilization and installation
+## 💻 Utilization and installation
 
 ```sh
 git clone https://github.com/cedzeedev/cedzeebrowser.git
@@ -18,16 +18,31 @@ pip install -r requirements.txt
 python ./main.py
 ```
 
-# For developers 
+## 🧑‍💻 For developers
 
-If you wish to contribute to the project, I recommend focusing on the features outlined in the [TODO.md](TODO.md).
+If you wish to contribute to the project, I recommend focusing on the features outlined in the [TODO.md](TODO.md) and [issues](https://github.com/cedzeedev/cedzeebrowser/issues).
 
-## Organization
+> [!IMPORTANT]
+>
+> Please respect our [organization](#️-organization)
+>
+> **Code style:**
+>
+> - **Functions name**: snake_case
+> - **Tabs**: 4 spaces
+> - **Constants**: FULL MAJ
+>
+> Please use **black formatter**
+>
+> **Please document your code using a comment** (`#`)
+>
+
+### 🗃️ Organization
 
 **Minimal configuration**:
 
 ```txt
-./
+.
 ├── ...
 ├── main.py
 ├── src
@@ -46,23 +61,23 @@ If you wish to contribute to the project, I recommend focusing on the features o
     └── *.html
 ```
 
-## Theme and color scheme
+## 🎨 Theme and color scheme
 
 - `theme/theme.css`: Style sheet for the search engine theme
 
 ---
 
-## Contributing
+## 🤲 Contributing
 
 The cedzee browser source code is located in the Git repository at [github.com/cedzeedev/cedzeebrowser](https://github.com/cedzeedev/cedzeebrowser/).
 Contributions are most welcome by forking the repository and sending a pull request.
 
-> [!NOTE]
+> [!IMPORTANT]
 >
-> Please respect our [organization](#organization)
+> Please read [Note for devs](#-for-developers)
 >
 
-## Credit
+## 📜 Credit
 
 **Contributors :**
 

@@ -23,10 +23,12 @@ from PyQt6.QtCore import (
     pyqtSlot,
 )
 from PyQt6.QtWebEngineCore import QWebEngineDownloadRequest
-from PyQt6.QtGui import QIcon, QDesktopServices
+from PyQt6.QtGui import QDesktopServices
 
-directory1 = os.path.dirname(os.path.abspath(__file__))
-directory = os.path.dirname(directory1)
+# Directory
+directory = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
 
 
 class DownloadFileWorker(QObject):
@@ -47,7 +49,7 @@ class DownloadFileWorker(QObject):
                 history = json.load(f)
             self.history_loaded.emit(history)
         except (json.JSONDecodeError, Exception) as e:
-            self.error.emit(f"Erreur lors du chargement de l'historique: {e}")
+            self.error.emit(f"Error while loading history: {e}")
             self.history_loaded.emit([])
 
     @pyqtSlot(list)
@@ -57,7 +59,7 @@ class DownloadFileWorker(QObject):
             with open(self.history_file_path, "w", encoding="utf-8") as f:
                 json.dump(history_data, f, indent=4)
         except Exception as e:
-            self.error.emit(f"Erreur lors de la sauvegarde de l'historique: {e}")
+            self.error.emit(f"Error while saving the history: {e}")
 
 
 class DummyDownloadRequest(QObject):
@@ -290,9 +292,9 @@ class DownloadManager(QWidget):
                 with open(css_path, "r", encoding="utf-8") as f:
                     self.setStyleSheet(f.read())
             else:
-                print(f"Fichier CSS non trouvé : {css_path}")
+                print(f"[ERROR]: CSS file not found : {css_path}")
         except Exception as e:
-            print(f"Impossible de charger le thème pour DownloadManager: {e}")
+            print(f"[ERROR]: Unable to load the theme for DownloadManager: {e}")
 
     @pyqtSlot(QWebEngineDownloadRequest)
     def add_download(self, download_item: QWebEngineDownloadRequest):
@@ -377,7 +379,7 @@ class DownloadManager(QWidget):
 
     @pyqtSlot(str)
     def on_worker_error(self, message):
-        print(message)
+        print(f"[ERROR]: {message}")
 
     def closeEvent(self, event):
         self.worker_thread.quit()

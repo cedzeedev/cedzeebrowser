@@ -2,205 +2,217 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src * data: blob:; img-src * data: blob:; script-src 'unsafe-inline' 'unsafe-eval' http: https: qrc:; style-src 'unsafe-inline';" />
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src * data: blob:; img-src * data: blob:; script-src 'unsafe-inline' 'unsafe-eval' http: https: qrc:; style-src 'unsafe-inline';" />
 
 
-  <title>CEDZEE Browser - Contributors</title>
-  <style>
-    *,
-    *::before,
-    *::after {
-      margin: 0;
-      padding: 0;
-      border: 0;
-      outline: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+    <title>CEDZEE Browser - Contributors</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            outline: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    body {
-      background: rgb(69, 69, 69);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      padding: 2rem;
-    }
+        body {
+            background: rgb(69, 69, 69);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 2rem;
+        }
 
-    h1 {
-      font-size: max(15px, 5vmin);
-      /* WTF ?? */
-      background: rgb(255, 255, 255);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      margin: 20px;
-    }
+        h1 {
+            font-size: max(15px, 5vmin);
+            /* WTF ?? */
+            background: rgb(255, 255, 255);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 20px;
+        }
 
-    p.intro {
-      color: #ffffff;
-      font-size: 1.2rem;
-      max-width: 700px;
-      text-align: center;
-      margin-bottom: 2rem;
-    }
+        p.intro {
+            color: #ffffff;
+            font-size: 1.2rem;
+            max-width: 700px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
 
-    .project-link {
-      background: rgb(39, 39, 39);
-      color: white;
-      border-radius: 30px;
-      padding: 0.8rem 2rem;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 1.2rem;
-      box-shadow: 0 4px 15px rgba(45, 100, 202, 0.6);
-      transition: all 0.3s ease;
-      margin-bottom: 2rem;
-    }
+        .project-link {
+            background: rgb(39, 39, 39);
+            color: white;
+            border-radius: 30px;
+            padding: 0.8rem 2rem;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(45, 100, 202, 0.6);
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
 
-    .project-link:hover {
-      background: rgb(107, 107, 107);
-      box-shadow: 0 6px 20px rgba(43, 43, 43, 0.9);
-      transform: scale(1.05);
-    }
+        .project-link:hover {
+            background: rgb(107, 107, 107);
+            box-shadow: 0 6px 20px rgba(43, 43, 43, 0.9);
+            transform: scale(1.05);
+        }
 
-    .contributors-wrapper ul {
-      list-style: none;
-      padding: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1.5rem;
-      justify-content: center;
-      max-width: 800px;
-    }
+        .contributors-wrapper ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            max-width: 800px;
+        }
 
-    .contributor {
-      background: #202020;
-      border-radius: 15px;
-      padding: 1rem;
-      width: 150px;
-      text-align: center;
-      box-shadow: 0 0 12px #000000;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      cursor: pointer;
-    }
+        .contributor {
+            background: #202020;
+            border-radius: 15px;
+            padding: 1rem;
+            width: 150px;
+            text-align: center;
+            box-shadow: 0 0 12px #000000;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
 
-    .contributor:hover {
-      transform: scale(1.08);
-      box-shadow: 0 0 20px #000000;
-    }
+        .contributor:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 20px #000000;
+        }
 
-    .contributor img {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 0.5rem;
-      border: 2px solid #2d64ca;
-    }
+        .contributor img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 0.5rem;
+            border: 2px solid #2d64ca;
+        }
 
-    .contributor p {
-      margin: 0.3rem 0;
-      font-weight: bold;
-      color: #2d64ca;
-      font-size: 1rem;
-      word-break: break-word;
-    }
+        .contributor p {
+            margin: 0.3rem 0;
+            font-weight: bold;
+            color: #2d64ca;
+            font-size: 1rem;
+            word-break: break-word;
+        }
 
-    .contributor a {
-      font-size: 0.85rem;
-      color: #ffffff;
-      text-decoration: none;
-    }
+        .contributor a {
+            font-size: 0.85rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
 
-    .contributor a:hover {
-      text-decoration: underline;
-    }
+        .contributor a:hover {
+            text-decoration: underline;
+        }
 
-    footer {
-      margin-top: 3rem;
-      color: #ffffff;
-      font-size: 0.9rem;
-      text-align: center;
-    }
+        footer {
+            margin-top: 3rem;
+            color: #ffffff;
+            font-size: 0.9rem;
+            text-align: center;
+        }
 
-    footer a {
-      color: #ffffff;
-      text-decoration: underline;
-    }
+        footer a {
+            color: #ffffff;
+            text-decoration: underline;
+        }
 
-    footer a:hover {
-      color: #7fbfff;
-    }
-  </style>
+        footer a:hover {
+            color: #7fbfff;
+        }
+    </style>
+
 </head>
 
 <body>
-  <h1>Contributors - CEDZEE Browser</h1>
-  <p class="intro">
-    Meet the developers powering the CEDZEE Browser.<br />
-    Click their username to check out their GitHub profile and see their work!
-  </p>
 
-  <a href="https://github.com/cedzeedev/cedzeebrowser" target="_blank" class="project-link">View Project on GitHub</a>
+    <h1>Contributors - CEDZEE Browser</h1>
 
-  <div class="contributors-wrapper">
-    <ul></ul>
-  </div>
+    <p class="intro">
+        Meet the developers powering the CEDZEE Browser.<br />
+        Click their username to check out their GitHub profile and see their work!
+    </p>
 
-  <p style="margin-top: 3rem; color: #ffffff; font-size: 0.9rem; text-align: center;">
-    Made by <a href="https://github.com/rapha1004" target="_blank" rel="noopener noreferrer"
-      style="color: rgb(107, 107, 107); text-decoration: underline;">rapha1004</a>
-  </p>
+    <a href="https://github.com/cedzeedev/cedzeebrowser" target="_blank" class="project-link">View Project on GitHub</a>
 
-  <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
-  <script>
-    new QWebChannel(qt.webChannelTransport, function (channel) {
-      const api = channel.objects.cedzeebrowser;
-      const wrapper = document.querySelector(".contributors-wrapper ul");
-      const url = "https://api.github.com/repos/cedzeedev/cedzeebrowser/contributors";
+    <div class="contributors-wrapper">
+        <ul></ul>
+    </div>
 
-      const init = {
-        method: 'GET',
-        headers: { 'Accept': 'application/vnd.github.v3+json' },
-        timeout: 10000
-      };
+    <p style="margin-top: 3rem; color: #ffffff; font-size: 0.9rem; text-align: center;">
+        Made by <a href="https://github.com/rapha1004" target="_blank" rel="noopener noreferrer"
+            style="color: #6b6b6b; text-decoration: underline;">rapha1004</a>
+    </p>
 
-      api.fetchUrl(url, init)
-        .then(async result => {
-          if (result.error || result.status < 200 || result.status >= 300) {
-            const msg = result.error ? result.error : `${result.status} ${result.statusText}`;
-            wrapper.innerHTML = `<p style="color: #f00;">Failed to load contributors: ${msg}</p>`;
-            console.error('Error fetching contributors:', msg);
-            return;
-          }
-          const data = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
-          for (const user of data.slice(0, 12)) {
-            const imgRes = await api.fetchUrl(user.avatar_url, init);
-            const imgSrc = imgRes.error ? '' : imgRes.body;
-            const li = document.createElement("li");
-            li.classList.add("contributor");
-            li.innerHTML = `
-              <img src="${imgSrc}" alt="${user.login}'s avatar" />
-              <p>${user.login}</p>
-              <a href="${user.html_url}" target="_blank" rel="noopener noreferrer">
-                View GitHub profile
-              </a>
-            `;
-            wrapper.appendChild(li);
-          }
-        })
-        .catch(err => {
-          wrapper.innerHTML = `<p style="color: #f00;">Failed to load contributors: ${err}</p>`;
-          console.error('Unexpected error:', err);
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            const api = channel.objects.cedzeebrowser;
+            const wrapper = document.querySelector(".contributors-wrapper ul");
+            const url = "https://api.github.com/repos/cedzeedev/cedzeebrowser/contributors";
+
+            const init = {
+                method: 'GET',
+                headers: { 'Accept': 'application/vnd.github.v3+json' },
+                timeout: 10000
+            };
+
+            api.fetchUrl(url, init)
+                .then(async result => {
+
+                    if (result.error || result.status < 200 || result.status >= 300) {
+                        const msg = result.error ? result.error : `${result.status} ${result.statusText}`;
+                        wrapper.innerHTML = `<p style="color: #f00;">Failed to load contributors: ${msg}</p>`;
+                        console.error(`Error fetching contributors: ${msg}`);
+                        return;
+                    }
+
+                    const data = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
+
+                    for (const user of data.slice(0, 12)) {
+                        const imgRes = await api.fetchUrl(user.avatar_url, init);
+                        const imgSrc = imgRes.error ? '' : imgRes.body;
+                        const li = document.createElement("li");
+
+                        li.classList.add("contributor");
+                        li.innerHTML = `
+                            <img src="${imgSrc}" alt="${user.login}'s avatar" />
+                            <p>${user.login}</p>
+                            <a href="${user.html_url}" target="_blank" rel="noopener noreferrer">
+                                View GitHub profile
+                            </a>
+                        `;
+
+                        wrapper.appendChild(li);
+                    }
+                })
+                .catch(e => {
+                    wrapper.innerHTML = `<p style="color: #f00;">Failed to load contributors: ${e}</p>`;
+                    console.error(`Unexpected error: ${e}`);
+                });
         });
-    });
-  </script>
+
+    </script>
+
 </body>
 
 </html>

@@ -2,8 +2,10 @@
 <html lang="fr">
 
 <head>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <link rel="stylesheet" href="../theme/theme.css" />
     <title>Favoris</title>
     <style>
@@ -78,7 +80,7 @@
             try {
                 const response = await fetch(favoritesPath);
                 if (!response.ok) {
-                    throw new Error(`Erreur HTTP : ${response.status}`);
+                    throw new Error(`HTTP Error : ${response.status}`);
                 }
                 const favorites = await response.json();
 
@@ -93,8 +95,8 @@
                     li.appendChild(a);
                     listEl.appendChild(li);
                 });
-            } catch (error) {
-                console.error('Impossible de charger les favoris :', error);
+            } catch (e) {
+                console.error(`Unable to load favorites : ${e}`);
                 const listEl = document.getElementById('favorites-list');
                 listEl.innerHTML = "<li>Vous n'avez pas enregistré de pages.</li>";
             }
@@ -103,6 +105,7 @@
         // Charger les favoris au chargement de la page
         window.addEventListener('DOMContentLoaded', loadFavorites);
     </script>
+
 </body>
 
 </html>

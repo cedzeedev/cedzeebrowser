@@ -2,22 +2,25 @@
 <html lang="fr">
 
 <head>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../theme/theme.css" />
     <title>Mise à jour</title>
+
     <style>
         .cedzee-button-contributors:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
     </style>
+
 </head>
 
 <body>
 
     <h3 id="update-title">Initialisation…</h3>
-    <p id="info">Vérification du mode d’exécution…</p>
+    <p id="info">Vérification du mode d'exécution…</p>
     <p id="version-info"></p>
     <ul id="change-list"></ul>
 
@@ -62,10 +65,10 @@
                         infoText.textContent = "";
                     }
                 })
-                .catch(error => {
+                .catch(e => {
                     title.textContent = "Impossible de vérifier les mises à jour.";
                     infoText.textContent = "";
-                    console.error("Erreur :", error);
+                    console.error(`Error : ${e}`);
                 });
         }
 
@@ -86,13 +89,13 @@
                             if (cedzeebrowser.update) {
                                 cedzeebrowser.update();
                             } else {
-                                console.error("cedzeebrowser.update non disponible");
+                                console.error("cedzeebrowser.update not available");
                             }
                         });
                     } else {
                         title.textContent = "Mode inconnu : impossible de vérifier la mise à jour.";
                         infoText.textContent = "";
-                        console.warn("Mode non reconnu :", mode);
+                        console.warn(`Unrecognized mode : ${mode}`);
                     }
                 });
             });

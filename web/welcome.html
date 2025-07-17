@@ -2,10 +2,12 @@
 <html lang="fr">
 
 <head>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../theme/theme.css" />
     <title>Bienvenue</title>
+
     <style>
         body {
             background: rgb(69, 69, 69);
@@ -94,21 +96,23 @@
             cursor: not-allowed;
         }
     </style>
+
 </head>
 
 <body>
+
     <h1>Bienvenue</h1>
     <h2>Bienvenue sur cedzee browser</h2>
 
     <p class="texte">Pour commencer, sélectionnez votre moteur de recherche :</p>
 
-    <ul id="engineList">
-    </ul>
+    <ul id="engineList"></ul>
 
     <button id="nextBtn" disabled>Suivant</button>
 
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
+
         document.addEventListener('DOMContentLoaded', () => {
             const engines = [
                 'Google',
@@ -120,6 +124,7 @@
                 'Startpage',
                 'Brave Search'
             ];
+
             const ul = document.getElementById('engineList');
 
             engines.forEach(name => {
@@ -136,6 +141,7 @@
                 li.appendChild(label);
                 ul.appendChild(li);
             });
+
             new QWebChannel(qt.webChannelTransport, function (channel) {
                 window.cedzeebrowser = channel.objects.cedzeebrowser;
 
@@ -168,7 +174,9 @@
                 });
             });
         });
+
     </script>
+
 </body>
 
 </html>

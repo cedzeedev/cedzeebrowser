@@ -1,0 +1,10 @@
+{
+    "author": "Your name",
+    "description": "Simple description",
+    "version": "1.0.0",
+    "disabled": false,
+    "enabled_for": [],
+    "disabled_for": [
+        "https://example.com/"
+    ]
+}
