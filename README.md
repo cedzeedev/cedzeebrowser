@@ -28,9 +28,11 @@ If you wish to contribute to the project, I recommend focusing on the features o
 >
 > **Code style:**
 >
-> - **Functions name**: snake_case
+> - **Functions name**: snake_case (python only)
+> - **Class name**: camelCase
 > - **Tabs**: 4 spaces
 > - **Constants**: FULL MAJ
+> - **⚠️**: Use [logger](src/ConsoleLogger.py) instead of `print`
 >
 > Please use **black formatter**
 >

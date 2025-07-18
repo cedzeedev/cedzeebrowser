@@ -2,13 +2,16 @@ import os
 import sys
 import csv
 import traceback
-from datetime import datetime
 import requests
-from pathlib import Path
 
+from datetime import datetime
+from pathlib import Path
 from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup
+
 from src.bridge import CedzeeBridge
+from src.ConsoleLogger import logger
+
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import (
     Qt,
@@ -51,7 +54,6 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
 directory = os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))
 )
-
 
 home_url = "https://www.youtube.com"
 offline_url = os.path.abspath(f"{directory}/offline/index.html")
@@ -125,18 +127,16 @@ class CustomWebEnginePage(QWebEnginePage):
             if real_path:
                 self.setUrl(QUrl.fromLocalFile(real_path))
             else:
-                print(
-                    f"[ERROR]: Unknown cedzee:// path: {url.toString()}. Loading home.",
-                    file=sys.stderr,
+                logger.error(
+                    f"Unknown cedzee:// path: {url.toString()}. Loading home."
                 )
                 self.setUrl(QUrl.fromLocalFile(home_url))
             return False
         return super().acceptNavigationRequest(url, nav_type, isMainFrame)
 
     def certificateError(self, certificate_error: QWebEngineCertificateError):
-        print(
-            f"[ERROR]: Certificate error detected for {certificate_error.url().toString()}: {certificate_error.errorDescription()}",
-            file=sys.stderr,
+        logger.error(
+            f"Certificate error detected for {certificate_error.url().toString()}: {certificate_error.errorDescription()}"
         )
         return True
 
@@ -173,7 +173,7 @@ class BrowserWindow(QMainWindow):
             ) as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
-            print("[ERROR]: theme.css not found.")
+            logger.error("theme.css not found.")
 
         self.browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, self.browser, browser_window=self)
@@ -197,7 +197,7 @@ class BrowserWindow(QMainWindow):
         channel.registerObject("cedzeebrowser", bridge)
         browser.page().setWebChannel(channel)
         bridge.settingChanged.connect(
-            lambda k, v: print(f"[INFO]: Setting '{k}' updated on '{v}'")
+            lambda k, v: logger.info(f"Setting '{k}' updated on '{v}'")
         )
 
     def go_home(self):
@@ -234,9 +234,8 @@ class BrowserWindow(QMainWindow):
 
     def _handle_internet_check_result(self, is_available):
         if not is_available:
-            print(
-                "[INFO]: No Internet connection detected. Displaying offline page.",
-                file=sys.stderr,
+            logger.info(
+                "No Internet connection detected. Displaying offline page."
             )
             self.browser.setUrl(QUrl.fromLocalFile(offline_url))
 
@@ -257,7 +256,7 @@ class BrowserWindow(QMainWindow):
                     [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), url_str, title]
                 )
         except Exception as e:
-            print(f"[ERROR]: Error while writing to history : {e}")
+            logger.error(f"Error while writing to history : {e}")
 
     def save_to_history(self, url_str: str, title: str):
         if not (
@@ -306,7 +305,7 @@ class BrowserWindow(QMainWindow):
 
         def done(state):
             if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
-                print(f"[INFO]: Download complete : {path}")
+                logger.info(f"Download complete : {path}")
 
         download_item.stateChanged.connect(done)
 
@@ -315,7 +314,7 @@ class BrowserWindow(QMainWindow):
 
     def finalize_initial_load(self, data):
         if data.get("error"):
-            print(data["error"], file=sys.stderr)
+            logger.error(data["error"])
             self.browser.setUrl(QUrl.fromLocalFile(offline_url))
             return
 
@@ -444,7 +443,7 @@ def perform_initial_load(url):
                     try:
                         data[key] = int(value)
                     except ValueError:
-                        print(f"[ERROR]: Invalid value for {attr_name}: {value}")
+                        logger.error(f"Invalid value for {attr_name}: {value}")
                 else:
                     data[key] = value
 
@@ -466,7 +465,7 @@ def start_app(url: str):
     worker.finished.connect(worker.deleteLater)
     thread.finished.connect(thread.deleteLater)
     worker.result.connect(window.finalize_initial_load)
-    worker.error.connect(lambda e: print(f"[ERROR]: Error in the loading thread: {e}"))
+    worker.error.connect(lambda e: logger.error(f"Error in the loading thread: {e}"))
 
     thread.start()
 
@@ -483,10 +482,10 @@ if __name__ == "__main__":
         arg_path = sys.argv[1]
         if os.path.exists(arg_path):
             initial_load_url = QUrl.fromLocalFile(os.path.abspath(arg_path)).toString()
-            print(f"[INFO]: Attempt to load the local file: {initial_load_url}")
+            logger.info(f"Attempt to load the local file: {initial_load_url}")
         else:
-            print(
-                f"[INFO]: The argument provided '{arg_path}' is not a valid file path. Loading the default homepage URL."
+            logger.info(
+                f"The argument provided '{arg_path}' is not a valid file path. Loading the default homepage URL."
             )
 
     main_window = start_app(initial_load_url)

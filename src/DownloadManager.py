@@ -1,6 +1,11 @@
-# Slohwnix 2025
+
+# Thanks to Slohwnix
+
 import os
 import json
+
+from src.ConsoleLogger import logger
+
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -12,6 +17,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QFrame,
 )
+
 from PyQt6.QtCore import (
     Qt,
     QSize,
@@ -22,6 +28,7 @@ from PyQt6.QtCore import (
     QThread,
     pyqtSlot,
 )
+
 from PyQt6.QtWebEngineCore import QWebEngineDownloadRequest
 from PyQt6.QtGui import QDesktopServices
 
@@ -292,9 +299,9 @@ class DownloadManager(QWidget):
                 with open(css_path, "r", encoding="utf-8") as f:
                     self.setStyleSheet(f.read())
             else:
-                print(f"[ERROR]: CSS file not found : {css_path}")
+                logger.error(f"CSS file not found : {css_path}")
         except Exception as e:
-            print(f"[ERROR]: Unable to load the theme for DownloadManager: {e}")
+            logger.error(f"Unable to load the theme for DownloadManager: {e}")
 
     @pyqtSlot(QWebEngineDownloadRequest)
     def add_download(self, download_item: QWebEngineDownloadRequest):
@@ -379,7 +386,7 @@ class DownloadManager(QWidget):
 
     @pyqtSlot(str)
     def on_worker_error(self, message):
-        print(f"[ERROR]: {message}")
+        logger.error(message)
 
     def closeEvent(self, event):
         self.worker_thread.quit()

@@ -33,7 +33,7 @@ for src, dest in resources:
 build_cache_dir = os.path.abspath("build")
 
 if os.path.exists(build_cache_dir):
-    print(f"[INFO]: Deleting the cache folder {build_cache_dir}...")
+    print(f"Deleting the cache folder {build_cache_dir}...")
     shutil.rmtree(build_cache_dir)
 
 PyInstaller.__main__.run(args)

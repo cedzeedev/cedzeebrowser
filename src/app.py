@@ -4,12 +4,15 @@ import csv
 import json
 import ctypes
 import requests
+
 from urllib.parse import urlparse, quote
 from datetime import datetime
 
 from src.AppEngine import start_app
 from src.bridge import CedzeeBridge
+from src.ConsoleLogger import logger
 from src.DownloadManager import DownloadManager
+
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import (
     Qt,
@@ -60,11 +63,10 @@ if sys.platform == "win32":
 def message_handler(mode, context, message):
     if "QWindowsWindow::setGeometry" in message:
         return
-    print(f"[ERROR]: message", file=sys.stderr)
+    logger.error(message)
 
 
 qInstallMessageHandler(message_handler)
-
 
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--enable-gpu "
@@ -286,10 +288,11 @@ class BrowserWindow(QMainWindow):
         self.resize(1200, 800)
         self.center()
         icon_path = f"{directory}/resources/icons/icon.png"
+
         try:
             self.setWindowIcon(QIcon(icon_path))
         except Exception as e:
-            print(f"[ERROR]: Error loading the icon : {e}")
+            logger.error(f"Error loading the icon : {e}")
 
         self.app_windows = []
 
@@ -352,7 +355,7 @@ class BrowserWindow(QMainWindow):
             with open(css_path, "r") as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
-            print("[ERROR]: theme.css not found.")
+            logger.error("theme.css not found.")
 
         self.add_homepage_tab()
         self.start_background_tasks()
@@ -363,7 +366,7 @@ class BrowserWindow(QMainWindow):
         self.first_run_worker.moveToThread(self.first_run_thread)
         self.first_run_thread.started.connect(self.first_run_worker.check)
         self.first_run_worker.finished.connect(self.on_first_run_check_finished)
-        self.first_run_worker.error.connect(lambda msg: print(msg, file=sys.stderr))
+        self.first_run_worker.error.connect(lambda msg: logger.error(msg))
         self.first_run_worker.finished.connect(self.first_run_thread.quit)
         self.first_run_worker.finished.connect(self.first_run_worker.deleteLater)
         self.first_run_thread.finished.connect(self.first_run_thread.deleteLater)
@@ -375,7 +378,7 @@ class BrowserWindow(QMainWindow):
         self.update_check_worker.moveToThread(self.update_check_thread)
         self.update_check_thread.started.connect(self.update_check_worker.check)
         self.update_check_worker.finished.connect(self.on_update_check_finished)
-        self.update_check_worker.error.connect(lambda msg: print(msg, file=sys.stderr))
+        self.update_check_worker.error.connect(lambda msg: logger.error(msg))
         self.update_check_worker.finished.connect(self.update_check_thread.quit)
         self.update_check_worker.finished.connect(self.update_check_worker.deleteLater)
         self.update_check_thread.finished.connect(self.update_check_thread.deleteLater)
@@ -387,7 +390,7 @@ class BrowserWindow(QMainWindow):
         self.adblock_worker.moveToThread(self.adblock_thread)
         self.adblock_thread.started.connect(self.adblock_worker.load_list)
         self.adblock_worker.list_loaded.connect(self.on_adblock_list_loaded)
-        self.adblock_worker.error.connect(lambda msg: print(msg, file=sys.stderr))
+        self.adblock_worker.error.connect(lambda msg: logger.error(msg))
         self.adblock_worker.list_loaded.connect(self.adblock_thread.quit)
         self.adblock_worker.list_loaded.connect(self.adblock_worker.deleteLater)
         self.adblock_thread.finished.connect(self.adblock_thread.deleteLater)
@@ -411,8 +414,8 @@ class BrowserWindow(QMainWindow):
             block_list=self.ad_block_list, browser_window=self
         )
         self.profile.setUrlRequestInterceptor(self.request_interceptor)
-        print(
-            f"[ADBLOCK]: {len(self.ad_block_list)} domains loaded in the block list."
+        logger.info(
+            f"ADBLOCK: {len(self.ad_block_list)} domains loaded in the block list."
         )
 
     def contextMenuEvent(self, event):
@@ -556,7 +559,7 @@ class BrowserWindow(QMainWindow):
 
     def toggle_ad_blocker(self):
         self.ad_blocker_enabled = not self.ad_blocker_enabled
-        print(f"[ADBLOCK]: Ad blocker {'enabled' if self.ad_blocker_enabled else 'disabled'}")
+        logger.info(f"ADBLOCK: Ad blocker {'enabled' if self.ad_blocker_enabled else 'disabled'}")
         self.update_ad_blocker_button_ui()
         if self.current_browser():
             self.current_browser().reload()
@@ -658,8 +661,9 @@ class BrowserWindow(QMainWindow):
         bridge.set_web_page(browser.page())
         channel.registerObject("cedzeebrowser", bridge)
         browser.page().setWebChannel(channel)
+
         bridge.settingChanged.connect(
-            lambda k, v: print(f"[INFO]: Setting '{k}' update on '{v}'")
+            lambda k, v: logger.info(f"Setting '{k}' update on '{v}'")
         )
 
     def _create_and_configure_browser_tab(self, initial_url: QUrl):
@@ -916,15 +920,14 @@ class BrowserWindow(QMainWindow):
                 new_window = start_app(browser.url().toString())
                 self.app_windows.append(new_window)
             except Exception as e:
-                print(
-                    f"[ERROR]: Error when opening in the application : {e}",
-                    file=sys.stderr,
+                logger.error(
+                    f"Error when opening in the application : {e}"
                 )
 
 
 def path_to_uri(path):
     path = os.path.abspath(path).replace("\\", "/")
-    print(f"[INFO]: {path=}")
+    logger.info(f"{path=}")
     return (
         "file:///" + quote(path)
         if sys.platform == "Windows"
@@ -948,16 +951,14 @@ def main():
 
     else:
         file = sys.argv[1]
-        print(file)
         app_window = None
 
         if is_url(file):
             app_window = start_app(file)
         elif file.endswith((".html", ".cedapp")):
-            print(path_to_uri(file))
             app_window = start_app(path_to_uri(file))
         else:
-            print("[ERROR]: Unsupported file or unknown format.")
+            logger.error("Unsupported file or unknown format.")
             sys.exit(1)
 
         if app_window:

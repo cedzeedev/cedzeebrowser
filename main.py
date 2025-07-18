@@ -1,5 +1,6 @@
 
 from src.app import main
+from src.ConsoleLogger import logger
 
 r"""
 
@@ -47,4 +48,5 @@ r"""
 
 if __name__ == "__main__":
     # Start the app
+    logger.info("Starting CEDZEE browser...")
     main()

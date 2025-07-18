@@ -4,6 +4,8 @@ import shutil
 from dulwich import porcelain
 from pathlib import Path
 
+from src.ConsoleLogger import logger
+
 # Directory
 directory = os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))
@@ -27,10 +29,12 @@ FOLDERS_TO_REMOVE = ["scripts", "web", "src", "theme", "offline"]
 
 
 def update_all():
+    
     version_file = os.path.join(dst_dir, "version.json")
+    
     if os.path.exists(version_file):
         os.remove(version_file)
-        print(f"[UPDATE]: Deleted : {version_file}")
+        logger.info(f"UPDATE: Deleted : {version_file}")
 
     if os.path.isdir(src_dir):
         shutil.rmtree(src_dir, ignore_errors=True)
@@ -46,7 +50,7 @@ def update_all():
         folder_path = os.path.join(dst_dir, folder)
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path, ignore_errors=True)
-            print(f"[UPDATE]: Deleted : {folder_path}")
+            logger.info(f"UPDATE: Deleted : {folder_path}")
 
     for root, dirs, files in os.walk(src_dir):
         rel_root = os.path.relpath(root, src_dir)
@@ -72,6 +76,6 @@ def update_all():
 
     shutil.rmtree(src_dir, ignore_errors=True)
 
-    print("[UPDATE]: Update ended.")
-    print("[UPDATE]: Closing...")
+    logger.info("UPDATE: Update ended.")
+    logger.info("UPDATE: Closing...")
     sys.exit(1)

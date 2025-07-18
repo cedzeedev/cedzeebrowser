@@ -3,27 +3,33 @@ import os
 import base64
 import shutil
 import platform
+
 from src.Update import update_all
+from src.ConsoleLogger import logger
+
 from functools import wraps
 from urllib.parse import quote
+
 from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QVariant
 from PyQt6.QtWebEngineCore import QWebEngineProfile
 from PyQt6.QtWebEngineCore import QWebEnginePage
 
-
 try:
+
     import requests
+
 except ImportError:
-    print(
-        "[ERROR]: requests library not installed. Please install it using 'pip install requests'."
+
+    logger.error(
+        "requests library not installed. Please install it using 'pip install requests'."
     )
     requests = None
+
 
 # Directory
 directory = os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))
 )
-
 
 CONFIG_FILE = f"{directory}/resources/config.json"
 
@@ -48,7 +54,7 @@ def require_local_url(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         if not self.web_page:
-            print("[WARN]: web page not defined.")
+            logger.warning("Web page not defined.")
             return None
         url = self.web_page.url().toString()
         if not url.startswith(path_to_uri(directory)):
@@ -144,9 +150,9 @@ class CedzeeBridge(QObject):
     def update(self):
         try:
             update_all()
-            print("[INFO]: update_all() launched successfully")
+            logger.info("update_all() launched successfully")
         except Exception as e:
-            print(f"[ERROR]: Error during the update : {e}")
+            logger.error(f"Error during the update : {e}")
 
     @pyqtSlot(result=str)
     @require_local_url
@@ -183,11 +189,11 @@ class CedzeeBridge(QObject):
             if os.path.exists(f"{directory}/resources/saves"):
                 if os.path.exists(f"{directory}/resources/config"):
                     if os.path.exists(f"{directory}/resources/saves"):
-
                         shutil.rmtree(f"{directory}/resources/saves")
                         shutil.rmtree(f"{directory}/resources/config")
                         shutil.rmtree(f"{directory}/resources/saves")
-            print("[INFO]: Data deleted successfully")
+
+            logger.info("Data deleted successfully")
 
     @pyqtSlot(result=str)
     @require_local_url
@@ -199,7 +205,7 @@ class CedzeeBridge(QObject):
                 data = json.load(file)
             version = data[0].get("version", "unknown")
         except Exception as e:
-            print(f"[ERROR]: Error while loading version : {e}")
+            logger.error(f"Error while loading version : {e}")
             version = "unknown"
 
         def get_online_version():
@@ -243,6 +249,6 @@ class CedzeeBridge(QObject):
                 data = json.load(file)
             version = data[0].get("version", "unknown")
         except Exception as e:
-            print(f"[ERROR]: Error while loading version : {e}")
+            logger.error(f"Error while loading version : {e}")
             version = "unknown"
         return version
