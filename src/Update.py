@@ -1,6 +1,7 @@
 import os
 import sys
 import shutil
+
 from dulwich import porcelain
 from pathlib import Path
 
@@ -78,4 +79,4 @@ def update_all():
 
     logger.info("UPDATE: Update ended.")
     logger.info("UPDATE: Closing...")
-    sys.exit(1)
+    sys.exit()

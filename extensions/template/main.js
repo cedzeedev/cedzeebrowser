@@ -1,7 +1,7 @@
 
 import { Start } from "./src/Start.js";
 
-window.addEventListener("load", (event) => {
+window.addEventListener("DOMContentLoaded", (event) => {
 
     Start();
 

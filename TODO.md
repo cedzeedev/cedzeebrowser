@@ -3,6 +3,14 @@
 
 ## ✅/❌ Important Task List
 
+- [ ] Navigation privée
+- [ ] Les tabs améliorées (CSS) [more info](https://discord.com/channels/1213892868708503604/1213894739875725383/1397234722685325373)
+- [ ] Le ctrl+f pour rechercher dans une page web (Vérifier si c'est possible) [more info](https://discord.com/channels/1213892868708503604/1213894739875725383/1397253483043753985)
+- [ ] Quand on n'écrit pas un lien dans la barre d'URL ça nous lance une recherche avec le moteur sélectionné
+- [ ] Des recommandations dans le moteur de recherche avec l'historique
+- [ ] Opti du code (+ ajouter des commentaires et de la doc)
+- [ ] [Les extensions](#extensions)
+
 ### Extensions
 
 ```txt
@@ -40,7 +48,7 @@ extensions
 ```js
 import { Dependencies } from "extern_file.js"
 
-window.addEventListener("load", function (event) => {
+window.addEventListener("DOMContentLoaded", function (event) => {
 
   // code here
 
@@ -55,6 +63,9 @@ window.addEventListener("load", function (event) => {
 
 ## ✅/❌ Optional Task List
 
+- [ ] Option "➕ Nouvel onglet (ctrl+t)" dans la liste des tabs
+- [ ] Option "❌ Fermer les autres onglets" quand on fait un click droit sur un onglet
+- [ ] Option "🔇 Désactiver le son de l'onglet" quand on fait un click droit sur un onglet
 - [ ] [Themes](https://discord.com/channels/1213892868708503604/1213894739875725383/1391050183449514124) (Repo github avec `theme.cedzeetheme` au format json et `theme.css`)
 
 ## 🧑‍💻 In progress

@@ -188,6 +188,9 @@
 
                     const data = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
 
+                    if (!data)
+                        return;
+
                     for (const user of data.slice(0, 12)) {
                         const imgRes = await api.fetchUrl(user.avatar_url, init);
                         const imgSrc = imgRes.error ? '' : imgRes.body;
