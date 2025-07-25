@@ -57,7 +57,7 @@ If you wish to contribute to the project, I recommend focusing on the features o
 │   └──icons
 │       └── *.png
 ├── theme
-│   └── browser.css
+│   ├── browser.css
 │   └── theme.css
 └── web
     └── *.html
