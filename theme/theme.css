@@ -79,13 +79,30 @@ ul {
 
 li {
     margin: 10px;
+    width: 100%;
     display: flex;
-    padding: 15px;
     border-radius: 10px;
     align-items: center;
     background: #3a3a3a;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+li>* {
+    padding: 15px;
+}
+
+li input {
+    display: none;
+    width: 100%;
+}
+
+li label {
+    width: 100%;
+}
+
+li:has(input:checked) {
+    background: linear-gradient(to right, #275a6d, #18799c);
 }
 
 li:hover {
