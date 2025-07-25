@@ -66,7 +66,7 @@ window.addEventListener("DOMContentLoaded", function (event) => {
 - [ ] Option "➕ Nouvel onglet (ctrl+t)" dans la liste des tabs
 - [ ] Option "❌ Fermer les autres onglets" quand on fait un click droit sur un onglet
 - [ ] Option "🔇 Désactiver le son de l'onglet" quand on fait un click droit sur un onglet
-- [ ] [Themes](https://discord.com/channels/1213892868708503604/1213894739875725383/1391050183449514124) (Repo github avec `theme.cedzeetheme` au format json et `theme.css`)
+- [ ] [Themes](https://discord.com/channels/1213892868708503604/1213894739875725383/1391050183449514124) (Repo github avec `theme.cedzeetheme` au format json et `theme.css`/`browser.css`)
 
 ## 🧑‍💻 In progress
 
