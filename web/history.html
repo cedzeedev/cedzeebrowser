@@ -5,251 +5,42 @@
 
     <meta charset="UTF-8">
 
+    <link rel="stylesheet" href="../theme/theme.css">
     <title>Historique de navigation</title>
-    <style>
-        *,
-        *::before,
-        *::after {
-            margin: 0;
-            padding: 0;
-            border: 0;
-            outline: 0;
-            font-family: sans-serif;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: rgb(69, 69, 69);
-            color: #f0f0f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            padding-top: 80px;
-        }
-
-        h1 {
-            font-size: max(25px, 8vmin);
-            background: rgb(255, 255, 255);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .history-date-header {
-            font-size: 1.2rem;
-            color: #a0a0a0;
-            margin-top: 30px;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #555;
-            width: 100%;
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
-            width: 90%;
-            max-width: 800px;
-        }
-
-        li {
-            margin: 10px 0;
-            background: #3a3a3a;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            transition: transform 0.2s ease, background-color 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        li:hover {
-            transform: translateY(-2px);
-            background-color: #505050;
-        }
-
-        .history-item-time {
-            font-weight: bold;
-            color: #ccc;
-            flex-shrink: 0;
-        }
-
-        .link-container {
-            display: flex;
-            flex-direction: column;
-        }
-
-        a.history-title {
-            text-decoration: none;
-            color: #5dade2;
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-
-        span.history-url {
-            font-size: 0.85rem;
-            color: #888;
-            word-break: break-all;
-        }
-
-        .header-items {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-        }
-
-        #theme-toggle {
-            padding: 10px 20px;
-            background: #4a4a4a;
-            color: white;
-            border-radius: 30px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            transition: all 0.3s ease;
-        }
-
-        #theme-toggle:hover {
-            background: #606060;
-            transform: scale(1.05);
-        }
-
-        #error-container {
-            background-color: #5d3a3a;
-            border: 1px solid #ff6b6b;
-            padding: 25px;
-            border-radius: 8px;
-            text-align: center;
-            margin-top: 20px;
-            width: 90%;
-            max-width: 800px;
-        }
-
-        #error-container h2 {
-            color: #ff8c8c;
-            margin-bottom: 15px;
-        }
-
-        #error-container p {
-            margin-bottom: 10px;
-            line-height: 1.5;
-        }
-
-        #error-container code {
-            background-color: #2E2E2E;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 1rem;
-            display: inline-block;
-            margin-top: 10px;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        body.light-mode {
-            background: #f0f0f0;
-            color: #000000;
-        }
-
-        body.light-mode h1 {
-            background: linear-gradient(#114aae, #2d64ca);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-        }
-
-        body.light-mode .history-date-header {
-            color: #555;
-            border-bottom-color: #ddd;
-        }
-
-        body.light-mode li {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        body.light-mode li:hover {
-            background-color: #f9f9f9;
-        }
-
-        body.light-mode .history-item-time {
-            color: #333;
-        }
-
-        body.light-mode a.history-title {
-            color: #3498db;
-        }
-
-        body.light-mode span.history-url {
-            color: #666;
-        }
-
-        body.light-mode #error-container {
-            background-color: #ffe8e8;
-            border-color: #e53e3e;
-        }
-
-        body.light-mode #error-container h2 {
-            color: #c53030;
-        }
-
-        body.light-mode #error-container code {
-            background-color: #e2e8f0;
-        }
-
-        body.light-mode #theme-toggle {
-            background: #ffffff;
-            color: #333;
-            border: 1px solid #ccc;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        body.light-mode #theme-toggle:hover {
-            background: #e9e9e9;
-        }
-    </style>
 
 </head>
 
 <body>
 
-    <div class="header-items"> <button id="theme-toggle">Changer de thème</button> </div>
+    <h1>Historique</h1>
 
-    <h1>Historique de navigation</h1>
+    <div id="error_container" class="hidden">
 
-    <div id="error-container" class="hidden">
         <h2>⚠️ Erreur de l'historique</h2>
         <p>Le fichier de l'historique semble manquant ou invalide.</p>
         <p>Pour résoudre ce problème, veuillez supprimer le fichier suivant et redémarrer le navigateur :</p>
         <code>resources/config/history.csv</code>
+
     </div>
 
-    <ul id="history-list"></ul>
+    <ul id="history_list"></ul>
 
     <script>
-        const historyList = document.getElementById('history-list');
-        const errorContainer = document.getElementById('error-container');
-        const mainTitle = document.querySelector('h1');
-        const themeToggle = document.getElementById('theme-toggle');
+        const history_list = document.getElementById("history_list");
+        const error_container = document.getElementById("error_container");
+        const main_title = document.querySelector("h1");
 
-        fetch('../resources/saves/history.csv')
+        fetch("../resources/saves/history.csv")
+
             .then(response => {
-                if (!response.ok) {
+                if (!response.ok)
                     throw new Error(`The file history.csv is not found (HTTP ${response.status})`);
-                }
                 return response.text();
             })
+
             .then(data => {
                 try {
-                    const lines = data.trim().split('\n').filter(line => line);
+                    const lines = data.trim().split("\n").filter(line => line);
                     if (lines.length === 0 && data.length > 0) {
                         throw new Error("The history file is empty or incorrectly formatted.");
                     }
@@ -258,48 +49,48 @@
                     let currentDate = null;
 
                     lines.forEach(line => {
-                        const parts = line.split(',');
+                        const parts = line.split(",");
                         if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) {
                             throw new Error(`Malformed line : "${line}"`);
                         }
 
                         const timestampStr = parts[0].trim();
                         const url = parts[1].trim();
-                        const title = parts.slice(2).join(',').trim();
+                        const title = parts.slice(2).join(",").trim();
 
                         const dateObj = new Date(timestampStr);
                         if (isNaN(dateObj.getTime())) {
                             throw new Error(`Invalid date for the line : "${line}"`);
                         }
 
-                        const entryDate = dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-                        const entryTime = dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                        const entryDate = dateObj.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+                        const entryTime = dateObj.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
                         if (entryDate !== currentDate) {
                             currentDate = entryDate;
-                            const dateHeader = document.createElement('h2');
-                            dateHeader.className = 'history-date-header';
+                            const dateHeader = document.createElement("h2");
+                            dateHeader.className = "history-date-header";
                             dateHeader.textContent = currentDate;
-                            historyList.appendChild(dateHeader);
+                            history_list.appendChild(dateHeader);
                         }
 
-                        const listItem = document.createElement('li');
-                        const timeSpan = document.createElement('span');
-                        timeSpan.className = 'history-item-time';
+                        const listItem = document.createElement("li");
+                        const timeSpan = document.createElement("span");
+                        timeSpan.className = "history-item-time";
                         timeSpan.textContent = entryTime;
 
-                        const linkContainer = document.createElement('div');
-                        linkContainer.className = 'link-container';
+                        const linkContainer = document.createElement("div");
+                        linkContainer.className = "link-container";
 
-                        const titleLink = document.createElement('a');
+                        const titleLink = document.createElement("a");
                         titleLink.href = url;
                         titleLink.textContent = title;
-                        titleLink.className = 'history-title';
+                        titleLink.className = "history-title";
                         titleLink.target = "_blank";
 
-                        const urlSpan = document.createElement('span');
+                        const urlSpan = document.createElement("span");
                         urlSpan.textContent = url;
-                        urlSpan.className = 'history-url';
+                        urlSpan.className = "history-url";
 
                         linkContainer.appendChild(titleLink);
                         linkContainer.appendChild(urlSpan);
@@ -307,38 +98,24 @@
                         listItem.appendChild(timeSpan);
                         listItem.appendChild(linkContainer);
 
-                        historyList.appendChild(listItem);
+                        history_list.appendChild(listItem);
                     });
 
                 } catch (e) {
                     console.error(`Validation error of the history: ${e.message}`);
-                    mainTitle.classList.add('hidden');
-                    historyList.classList.add('hidden');
-                    themeToggle.classList.add('hidden');
-                    errorContainer.classList.remove('hidden');
+                    main_title.classList.add("hidden");
+                    history_list.classList.add("hidden");
+                    error_container.classList.remove("hidden");
                 }
             })
+
             .catch(e => {
                 console.error(`Error while loading history: ${e.message}`);
-                mainTitle.classList.add('hidden');
-                historyList.classList.add('hidden');
-                themeToggle.classList.add('hidden');
-                errorContainer.classList.remove('hidden');
+                main_title.classList.add("hidden");
+                history_list.classList.add("hidden");
+                error_container.classList.remove("hidden");
             });
 
-
-        const body = document.body;
-        const savedTheme = localStorage.getItem('theme');
-
-        if (savedTheme === 'light') {
-            body.classList.add('light-mode');
-        }
-
-        themeToggle.addEventListener('click', () => {
-            body.classList.toggle('light-mode');
-            const currentTheme = body.classList.contains('light-mode') ? 'light' : 'dark';
-            localStorage.setItem('theme', currentTheme);
-        });
     </script>
 
 </body>

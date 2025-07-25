@@ -57,7 +57,7 @@ If you wish to contribute to the project, I recommend focusing on the features o
 │   └──icons
 │       └── *.png
 ├── theme
-│   ├── ...
+│   └── browser.css
 │   └── theme.css
 └── web
     └── *.html
@@ -65,7 +65,8 @@ If you wish to contribute to the project, I recommend focusing on the features o
 
 ## 🎨 Theme and color scheme
 
-- `theme/theme.css`: Style sheet for the search engine theme
+- `theme/browser.css`: Qt Style Sheet for the browser UI
+- `theme/theme.css`: Style Sheet for web content
 
 ---
 

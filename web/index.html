@@ -13,73 +13,109 @@
 
 <body>
 
-    <div class="items">
-        <a href="https://mail.google.com" target="_blank" rel="noopener noreferrer">Gmail</a>
-        <a href="https://youtube.com" target="_blank" rel="noopener noreferrer">YouTube</a>
-    </div>
-
     <h1>CEDZEE</h1>
 
-    <form id="searchForm">
-        <input type="text" id="searchQuery" placeholder="Rechercher..." autofocus />
-        <input type="submit" id="searchSubmit" value="🔎" />
+    <form id="search_form">
+
+        <input type="text" id="search_query" placeholder="Rechercher..." autofocus />
+
     </form>
 
-    <a class="cedzee-button-contributors" href="cedzee://contributors">Contributeurs</a>
+    <div class="content">
+
+        <a class="cedzee-button-searchbar" href="https://github.com/cedzeedev/cedzeebrowser">Github</a>
+        <a class="cedzee-button-searchbar" href="https://cedzee-browser-contributors.vercel.app/">Contributeurs</a>
+
+    </div>
 
     <script>
-        function fallbackToGoogle() {
-            const searchInput = document.getElementById('searchQuery');
-            const searchURL = "https://www.google.com/search?q=";
 
-            document.getElementById("searchForm").addEventListener("submit", function (event) {
-                event.preventDefault();
-                const search = searchInput.value;
-                window.location.href = `${searchURL}${encodeURIComponent(search)}`;
-            });
-        }
+        window.addEventListener("DOMContentLoaded", () => {
 
-        function initializeCEDZEE() {
-            if (typeof qt === 'undefined' || typeof QWebChannel === 'undefined') {
-                fallbackToGoogle();
-                return;
+            const search_query = document.getElementById("search_query");
+            const search_form = document.getElementById("search_form");
+
+            function fallbackToGoogle() {
+                const searchURL = "https://www.google.com/search?q=";
+
+                search_form.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    const search = search_query.value;
+                    window.location.href = `${searchURL}${encodeURIComponent(search)}`;
+                });
             }
 
-            new QWebChannel(qt.webChannelTransport, function (channel) {
-                const cedzeebrowser = channel.objects.cedzeebrowser;
-                if (!cedzeebrowser || !cedzeebrowser.get) {
-                    fallbackToGoogle();
-                    return;
+            function initializeCEDZEE() {
+                if (typeof qt === "undefined" || typeof QWebChannel === "undefined") {
+                    return fallbackToGoogle();
                 }
 
-                cedzeebrowser.get('searchEngine', function (searchEngine) {
-                    const urls = {
-                        "Google": "https://www.google.com/search?q=",
-                        "Qwant Junior": "https://www.qwantjunior.com/?q=",
-                        "Ecosia": "https://www.ecosia.org/search?q=",
-                        "Bing": "https://www.bing.com/search?q=",
-                        "DuckDuckGo": "https://duckduckgo.com/?q=",
-                        "Yahoo": "https://search.yahoo.com/search?p=",
-                        "Startpage": "https://www.startpage.com/do/search?query=",
-                        "Brave Search": "https://search.brave.com/search?q="
-                    };
-                    const searchURL = urls[searchEngine] || urls["Google"];
-                    const searchInput = document.getElementById('searchQuery');
+                new QWebChannel(qt.webChannelTransport, function (channel) {
+                    const cedzeebrowser = channel.objects.cedzeebrowser;
 
-                    document.getElementById("searchForm").addEventListener("submit", function (event) {
-                        event.preventDefault();
-                        const search = searchInput.value;
-                        window.location.href = `${searchURL}${encodeURIComponent(search)}`;
+                    if (!cedzeebrowser || !cedzeebrowser.get) {
+                        return fallbackToGoogle();
+                    }
+
+                    cedzeebrowser.get("searchEngine", function (searchEngine) {
+                        const urls = {
+                            "Google": "https://www.google.com/search?q=",
+                            "Qwant Junior": "https://www.qwantjunior.com/?q=",
+                            "Ecosia": "https://www.ecosia.org/search?q=",
+                            "Bing": "https://www.bing.com/search?q=",
+                            "DuckDuckGo": "https://duckduckgo.com/?q=",
+                            "Yahoo": "https://search.yahoo.com/search?p=",
+                            "Startpage": "https://www.startpage.com/do/search?query=",
+                            "Brave Search": "https://search.brave.com/search?q="
+                        };
+
+                        const searchURL = urls[searchEngine] || urls["Google"];
+
+                        document.getElementById("search_form").addEventListener("submit", function (event) {
+                            event.preventDefault();
+                            const search = search_query.value;
+                            window.location.href = `${searchURL}${encodeURIComponent(search)}`;
+                        });
                     });
                 });
-            });
-        }
+            }
 
-        const script = document.createElement('script');
-        script.src = 'qrc:///qtwebchannel/qwebchannel.js';
-        script.onload = initializeCEDZEE;
-        script.onerror = fallbackToGoogle;
-        document.head.appendChild(script);
+            const script = document.createElement('script');
+            script.src = 'qrc:///qtwebchannel/qwebchannel.js';
+            script.onload = initializeCEDZEE;
+            script.onerror = fallbackToGoogle;
+            document.head.appendChild(script);
+
+            const placeholders = [
+                "Quel temps fait-il ?",
+                "Que faire demain ?",
+                "Des idées de cadeaux",
+                "Un site en particulier ?"
+            ];
+
+            let anim_state = 0;
+            let anim_select = 0;
+
+            const animation = setInterval(() => {
+
+                search_query.placeholder = `Rechercher... ${placeholders[anim_select].slice(0, anim_state + 1)}`;
+
+                if (anim_state >= placeholders[anim_select].length) {
+                    anim_state = - 1;
+                } else {
+                    anim_state++;
+                }
+
+                anim_select += anim_state == 0;
+
+                if (anim_select >= placeholders.length) {
+                    clearInterval(animation);
+                }
+
+            }, 250);
+
+        });
+
     </script>
 
 </body>

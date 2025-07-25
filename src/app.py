@@ -89,14 +89,13 @@ directory = os.path.dirname(
 )
 
 home_url = os.path.abspath(f"{directory}/web/index.html")
-history_page_url = os.path.abspath(f"{directory}/web/history.html")
-update_page_url = os.path.abspath(f"{directory}/web/update.html")
-offline_url = os.path.abspath(f"{directory}/offline/index.html")
 game_url = os.path.abspath(f"{directory}/offline/game.html")
+offline_url = os.path.abspath(f"{directory}/offline/index.html")
 welcome_url = os.path.abspath(f"{directory}/web/welcome.html")
-contributors_url = os.path.abspath(f"{directory}/web/contributors.html")
-favorites_url = os.path.abspath(f"{directory}/web/favorites.html")
 settings_url = os.path.abspath(f"{directory}/web/settings.html")
+favorites_url = os.path.abspath(f"{directory}/web/favorites.html")
+update_page_url = os.path.abspath(f"{directory}/web/update.html")
+history_page_url = os.path.abspath(f"{directory}/web/history.html")
 
 
 class FirstRunWorker(QObject):
@@ -256,7 +255,6 @@ class CustomWebEnginePage(QWebEnginePage):
                 "offline": offline_url,
                 "game": game_url,
                 "welcome": welcome_url,
-                "contributors": contributors_url,
                 "favorites": favorites_url,
                 "settings": settings_url,
             }
@@ -351,11 +349,11 @@ class BrowserWindow(QMainWindow):
         self.threads = []
 
         try:
-            css_path = os.path.abspath(f"{directory}/theme/theme.css")
+            css_path = os.path.abspath(f"{directory}/theme/browser.css")
             with open(css_path, "r") as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
-            logger.error("theme.css not found.")
+            logger.error("browser.css not found.")
 
         self.add_homepage_tab()
         self.start_background_tasks()
@@ -716,7 +714,6 @@ class BrowserWindow(QMainWindow):
                     "offline": offline_url,
                     "game": game_url,
                     "welcome": welcome_url,
-                    "contributors": contributors_url,
                     "favorites": favorites_url,
                     "settings": settings_url,
                 }
@@ -803,7 +800,6 @@ class BrowserWindow(QMainWindow):
             "cedzee://offline": offline_url,
             "cedzee://game": game_url,
             "cedzee://welcome": welcome_url,
-            "cedzee://contributors": contributors_url,
             "cedzee://favorites": favorites_url,
             "cedzee://settings": settings_url,
         }
@@ -872,7 +868,6 @@ class BrowserWindow(QMainWindow):
             QUrl.fromLocalFile(offline_url).toString(): "cedzee://offline",
             QUrl.fromLocalFile(game_url).toString(): "cedzee://game",
             QUrl.fromLocalFile(welcome_url).toString(): "cedzee://welcome",
-            QUrl.fromLocalFile(contributors_url).toString(): "cedzee://contributors",
             QUrl.fromLocalFile(favorites_url).toString(): "cedzee://favorites",
             QUrl.fromLocalFile(settings_url).toString(): "cedzee://settings",
         }

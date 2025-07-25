@@ -8,102 +8,49 @@
 
     <link rel="stylesheet" href="../theme/theme.css" />
     <title>Favoris</title>
-    <style>
-        *,
-        *::before,
-        *::after {
-            margin: 0;
-            padding: 0;
-            border: 0;
-            outline: 0;
-            font-family: sans-serif;
-        }
 
-        body {
-            background: rgb(69, 69, 69);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        h1 {
-            font-size: max(25px, 10vmin);
-            background: rgb(255, 255, 255);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            margin: 20px;
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
-            width: 90%;
-            max-width: 800px;
-        }
-
-        li {
-            margin: 10px 0;
-            background: #3a3a3a;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            transition: transform 0.2s ease, background-color 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        li:hover {
-            transform: translateY(-2px);
-            background-color: #505050;
-        }
-
-        a {
-            text-decoration: none;
-            color: #5dade2;
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-    </style>
 </head>
 
 <body>
+
     <h1>Favoris</h1>
+
     <ul id="favorites-list"></ul>
 
     <script>
+
         const favoritesPath = "../resources/saves/favorites.json";
+
         async function loadFavorites() {
             try {
                 const response = await fetch(favoritesPath);
+
                 if (!response.ok) {
                     throw new Error(`HTTP Error : ${response.status}`);
                 }
+
                 const favorites = await response.json();
 
-                const listEl = document.getElementById('favorites-list');
-                listEl.innerHTML = '';
+                const list = document.getElementById("favorites-list");
+
                 favorites.forEach(item => {
-                    const li = document.createElement('li');
-                    const a = document.createElement('a');
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
                     a.href = item.url;
                     a.textContent = item.title;
-                    a.target = '_blank';
+                    a.target = "_blank";
                     li.appendChild(a);
-                    listEl.appendChild(li);
+                    list.appendChild(li);
                 });
             } catch (e) {
                 console.error(`Unable to load favorites : ${e}`);
-                const listEl = document.getElementById('favorites-list');
-                listEl.innerHTML = "<li>Vous n'avez pas enregistré de pages.</li>";
+                const list = document.getElementById("favorites-list");
+                list.innerHTML = "<li>Vous n'avez pas enregistré de pages.</li>";
             }
         }
 
         // Charger les favoris au chargement de la page
-        window.addEventListener('DOMContentLoaded', loadFavorites);
+        window.addEventListener("DOMContentLoaded", loadFavorites);
     </script>
 
 </body>

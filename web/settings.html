@@ -8,71 +8,7 @@
 
     <link rel="stylesheet" href="../theme/theme.css" />
     <title>Settings</title>
-    <style>
-        body {
-            background: rgb(69, 69, 69);
-            color: white;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
 
-        h1 {
-            margin-bottom: 0;
-        }
-
-        h2 {
-            margin-top: 5px;
-            margin-bottom: 20px;
-        }
-
-        .texte {
-            margin-bottom: 15px;
-        }
-
-        #engineSelect {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #505050;
-            background-color: #3a3a3a;
-            color: white;
-            font-size: 1rem;
-            margin-bottom: 20px;
-            width: 90%;
-            max-width: 300px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background: #4a4a4a;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.9rem;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s ease;
-            margin-bottom: 15px;
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        button:hover:not(:disabled) {
-            background: #606060;
-            transform: translateY(-1px);
-        }
-
-        button:active:not(:disabled) {
-            transform: translateY(0);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-        }
-    </style>
 </head>
 
 <body>
@@ -80,105 +16,131 @@
     <h1>Paramètres</h1>
 
     <h2>Mise à jour</h2>
-    <p id="label_actual_version">Vous avez actuellement la version : Chargement...</p>
-    <button id="updateBtn">Vérifier</button>
+
+    <p id="version">Vous avez actuellement la version : Chargement...</p>
+
+    <button id="update_engine">Vérifier</button>
 
     <h2>Moteur de recherche</h2>
-    <p class="texte">Sélectionnez votre moteur de recherche :</p>
-    <select id="engineSelect"></select>
+
+    <p>Sélectionnez votre moteur de recherche :</p>
+
+    <select id="engine_select"></select>
 
     <h2>Données</h2>
-    <button id="clearCookiesBtn">Effacer les cookies</button>
-    <button id="clearCacheBtn">Effacer le cache</button>
-    <button id="clearAllDataBtn">Effacer toutes les données</button>
+
+    <div class="content">
+
+        <button class="warning" id="clear_cookies_button">Effacer les cookies</button>
+        <button class="warning" id="clear_cache_button">Effacer le cache</button>
+        <button class="danger" id="clear_all_button">Effacer toutes les données</button>
+
+    </div>
 
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const versionLabel = document.getElementById('label_actual_version');
-            const updateBtn = document.getElementById('updateBtn');
-            const selectElement = document.getElementById('engineSelect');
-            const clearCookiesBtn = document.getElementById('clearCookiesBtn');
-            const clearCacheBtn = document.getElementById('clearCacheBtn');
-            const clearAllDataBtn = document.getElementById('clearAllDataBtn');
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const version = document.getElementById("version");
+            const update_engine = document.getElementById("update_engine");
+            const selectElement = document.getElementById("engine_select");
+
+            const clear_cookies_button = document.getElementById("clear_cookies_button");
+            const clear_cache_button = document.getElementById("clear_cache_button");
+            const clear_all_button = document.getElementById("clear_all_button");
 
             const engines = [
-                'Google',
-                'Qwant Junior',
-                'Ecosia',
-                'Bing',
-                'DuckDuckGo',
-                'Yahoo',
-                'Startpage',
-                'Brave Search'
+                "Google",
+                "Qwant Junior",
+                "Ecosia",
+                "Bing",
+                "DuckDuckGo",
+                "Yahoo",
+                "Startpage",
+                "Brave Search"
             ];
 
-            const defaultOption = document.createElement('option');
+            const defaultOption = document.createElement("option");
             defaultOption.value = "";
             defaultOption.textContent = "Choisissez un moteur...";
             defaultOption.disabled = true;
             defaultOption.selected = true;
+
             selectElement.appendChild(defaultOption);
+
             engines.forEach(name => {
-                const option = document.createElement('option');
+                const option = document.createElement("option");
                 option.value = name;
                 option.textContent = name;
                 selectElement.appendChild(option);
             });
 
             function setButtonToManualInstall() {
-                updateBtn.textContent = 'Mise à jour détectée - installez manuellement';
-                updateBtn.disabled = true;
-                updateBtn.onclick = null;
+                update_engine.textContent = "Mise à jour détectée - installez manuellement";
+                update_engine.disabled = true;
+                update_engine.onclick = null;
             }
 
             function setButtonToCheck() {
-                updateBtn.textContent = 'Vérifier';
-                updateBtn.disabled = false;
-                updateBtn.onclick = verifyNow;
+                update_engine.textContent = "Vérifier";
+                update_engine.disabled = false;
+                update_engine.onclick = CheckForUpdate;
             }
 
-            function verifyNow() {
+            function CheckForUpdate() {
                 window.cedzeebrowser.VerifyUpdate((result) => {
-                    if (result === 'yes') {
-                        setButtonToManualInstall();
-                    } else {
-                        alert('Pas de mise à jour disponible.');
+                    if (result === "yes") {
+                        return setButtonToManualInstall();
                     }
+                    alert("Pas de mise à jour disponible.");
                 });
             }
 
             new QWebChannel(qt.webChannelTransport, (channel) => {
+
                 window.cedzeebrowser = channel.objects.cedzeebrowser;
 
                 cedzeebrowser.get_version((currentVersion) => {
-                    versionLabel.textContent =
-                        'Vous avez actuellement la version : ' + currentVersion;
+                    version.textContent = `Vous avez actuellement la version : ${currentVersion}`;
                 });
 
                 cedzeebrowser.VerifyUpdate((result) => {
-                    if (result === 'yes') {
-                        setButtonToManualInstall();
-                    } else {
-                        setButtonToCheck();
+                    if (result === "yes") {
+                        return setButtonToManualInstall();
+                    }
+                    setButtonToCheck();
+                });
+
+                cedzeebrowser.get("searchEngine", (current) => {
+                    if (current) {
+                        selectElement.value = current;
                     }
                 });
 
-                cedzeebrowser.get('searchEngine', (current) => {
-                    if (current) selectElement.value = current;
-                });
-                selectElement.addEventListener('change', () => {
-                    cedzeebrowser.set('searchEngine', selectElement.value);
+                selectElement.addEventListener("change", () => {
+                    cedzeebrowser.set("searchEngine", selectElement.value);
                 });
 
-                clearCookiesBtn.addEventListener('click', () => cedzeebrowser.clearCookies());
-                clearCacheBtn.addEventListener('click', () => cedzeebrowser.clearCache());
-                clearAllDataBtn.addEventListener('click', () => {
+                clear_cookies_button.addEventListener("click", () => {
+                    if (confirm("Voulez-vous vraiment effacer les cookies ?")) {
+                        cedzeebrowser.clearCookies()
+                    }
+                });
+
+                clear_cache_button.addEventListener("click", () => {
+                    if (confirm("Voulez-vous vraiment effacer le cache ?")) {
+                        cedzeebrowser.clearCache()
+                    }
+                });
+
+                clear_all_button.addEventListener("click", () => {
                     if (confirm("Voulez-vous vraiment effacer toutes les données de navigation (cookies, cache, etc.)? Cela ne supprimera pas l'historique ou les favoris.")) {
                         cedzeebrowser.ClearAll();
                     }
                 });
+
             });
+
         });
     </script>
 

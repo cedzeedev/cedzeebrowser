@@ -9,132 +9,43 @@
     <link rel="stylesheet" href="../theme/theme.css" />
     <title>Bienvenue</title>
 
-    <style>
-        body {
-            background: rgb(69, 69, 69);
-            color: white;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-
-        p {
-            color: white
-        }
-
-        h1 {
-            margin-bottom: 0;
-        }
-
-        h2 {
-            margin-top: 5px;
-            margin-bottom: 20px;
-        }
-
-        .texte {
-            margin-bottom: 15px;
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
-            width: 80%;
-            max-width: 600px;
-        }
-
-        li {
-            margin: 10px 0;
-            background: #3a3a3a;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            transition: transform 0.2s ease, background-color 0.2s ease;
-        }
-
-        li:hover {
-            transform: translateY(-2px);
-            background-color: #505050;
-        }
-
-        li>label {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            padding: 15px;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-
-        input[type="radio"] {
-            width: 1.2em;
-            height: 1.2em;
-        }
-
-        #nextBtn {
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            background: #4a4a4a;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            display: block;
-            margin: 30px auto 0;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            transition: all 0.3s ease;
-        }
-
-        #nextBtn:hover:not(:disabled) {
-            background: #606060;
-            transform: scale(1.05);
-        }
-
-        #nextBtn:disabled {
-            background-color: grey;
-            cursor: not-allowed;
-        }
-    </style>
-
 </head>
 
 <body>
 
     <h1>Bienvenue</h1>
-    <h2>Bienvenue sur cedzee browser</h2>
+    <h2>Bienvenue sur CEDZEE Browser</h2>
 
-    <p class="texte">Pour commencer, sélectionnez votre moteur de recherche :</p>
+    <p>Pour commencer, sélectionnez votre moteur de recherche :</p>
 
-    <ul id="engineList"></ul>
+    <ul id="engine_list"></ul>
 
-    <button id="nextBtn" disabled>Suivant</button>
+    <button id="next" disabled>Suivant</button>
 
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener("DOMContentLoaded", () => {
             const engines = [
-                'Google',
-                'Qwant Junior',
-                'Ecosia',
-                'Bing',
-                'DuckDuckGo',
-                'Yahoo',
-                'Startpage',
-                'Brave Search'
+                "Google",
+                "Qwant Junior",
+                "Ecosia",
+                "Bing",
+                "DuckDuckGo",
+                "Yahoo",
+                "Startpage",
+                "Brave Search"
             ];
 
-            const ul = document.getElementById('engineList');
+            const ul = document.getElementById("engine_list");
 
             engines.forEach(name => {
-                const li = document.createElement('li');
-                const label = document.createElement('label');
-                const input = document.createElement('input');
+                const li = document.createElement("li");
+                const label = document.createElement("label");
+                const input = document.createElement("input");
 
-                input.type = 'radio';
-                input.name = 'searchEngine';
+                input.type = "radio";
+                input.name = "searchEngine";
                 input.value = name;
 
                 label.appendChild(input);
@@ -146,30 +57,30 @@
             new QWebChannel(qt.webChannelTransport, function (channel) {
                 window.cedzeebrowser = channel.objects.cedzeebrowser;
 
-                const radios = document.querySelectorAll('input[name="searchEngine"]');
-                const nextBtn = document.getElementById('nextBtn');
+                const radios = document.querySelectorAll(`input[name="searchEngine"]`);
+                const next = document.getElementById("next");
                 let selectedEngine = null;
 
                 radios.forEach(radio => {
-                    radio.addEventListener('change', () => {
+                    radio.addEventListener("change", () => {
                         selectedEngine = radio.value;
-                        nextBtn.disabled = false;
+                        next.disabled = false;
                     });
                 });
 
-                nextBtn.addEventListener('click', () => {
+                next.addEventListener("click", () => {
                     if (!selectedEngine) return;
-                    cedzeebrowser.set('searchEngine', selectedEngine);
-                    window.location.href = 'cedzee://home';
+                    cedzeebrowser.set("searchEngine", selectedEngine);
+                    window.location.href = "cedzee://home";
                 });
 
-                cedzeebrowser.get('searchEngine', function (current) {
+                cedzeebrowser.get("searchEngine", function (current) {
                     if (!current) return;
                     radios.forEach(radio => {
                         if (radio.value === current) {
                             radio.checked = true;
                             selectedEngine = current;
-                            nextBtn.disabled = false;
+                            next.disabled = false;
                         }
                     });
                 });

@@ -169,11 +169,11 @@ class BrowserWindow(QMainWindow):
 
         try:
             with open(
-                os.path.abspath(f"{directory}/theme/theme.css"), "r", encoding="utf-8"
+                os.path.abspath(f"{directory}/theme/browser.css"), "r", encoding="utf-8"
             ) as f:
                 self.setStyleSheet(f.read())
         except FileNotFoundError:
-            logger.error("theme.css not found.")
+            logger.error("browser.css not found.")
 
         self.browser = QWebEngineView()
         page = CustomWebEnginePage(self.profile, self.browser, browser_window=self)

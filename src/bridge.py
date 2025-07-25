@@ -182,18 +182,21 @@ class CedzeeBridge(QObject):
     @pyqtSlot()
     @require_local_url
     def ClearAll(self):
-        if self.web_profile:
-            self.web_profile.clearHttpCache
-            self.web_profile.cookieStore().deleteAllCookies
+        try:
+            if self.web_profile:
 
-            if os.path.exists(f"{directory}/resources/saves"):
-                if os.path.exists(f"{directory}/resources/config"):
-                    if os.path.exists(f"{directory}/resources/saves"):
-                        shutil.rmtree(f"{directory}/resources/saves")
-                        shutil.rmtree(f"{directory}/resources/config")
-                        shutil.rmtree(f"{directory}/resources/saves")
+                self.web_profile.clearHttpCache
+                self.web_profile.cookieStore().deleteAllCookies
 
-            logger.info("Data deleted successfully")
+                if os.path.exists(f"{directory}/browser_data"):
+                    shutil.rmtree(f"{directory}/browser_data", ignore_errors=True)
+
+                if os.path.exists(f"{directory}/resources/saves/history.csv"):
+                    os.remove(f"{directory}/resources/saves/history.csv")
+
+                logger.info("Data deleted successfully")
+        except Exception as error:
+            logger.error(f"Data could not be deleted : {error}")
 
     @pyqtSlot(result=str)
     @require_local_url
