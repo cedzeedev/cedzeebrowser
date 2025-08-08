@@ -1,9 +1,9 @@
 [
     {
-        "version": "1.7",
-        "date": "2025-25-07",
+        "version": "1.8",
+        "date": "08/08/2025",
         "changes": [
-            "Minimalist design"
+            "Extension system introduced with a sample extension."
         ]
     }
 ]

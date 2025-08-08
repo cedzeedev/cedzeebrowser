@@ -11,9 +11,7 @@
 extension
 ├── config.json
 ├── extension.ico
-├── main.js
-└── src
-    └── ...
+└── main.js
 ```
 
 Drag the extension folder into the `extensions` folder of the [CEDZEE Browser](https://github.com/cedzeedev/cedzeebrowser/).

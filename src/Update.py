@@ -7,10 +7,8 @@ from pathlib import Path
 
 from src.ConsoleLogger import logger
 
-# Directory
-directory = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
+# Get project root directory
+directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 path_dir = Path(directory)
 src_dir = os.path.join(directory, "update_files")
@@ -20,26 +18,33 @@ repo_url = f"https://github.com/{repo}.git"
 token = None
 headers = {"Authorization": f"token {token}"} if token else {}
 
+# Files to exclude from update
 EXCLUDE = {
     os.path.normpath(os.path.join("resources", "config.json")),
     os.path.normpath(os.path.join("resources", "config", "history.csv")),
     os.path.normpath(os.path.join("resources", "saves", "favorites.json")),
 }
 
+# Folders to remove before update
 FOLDERS_TO_REMOVE = ["scripts", "web", "src", "theme", "offline"]
 
 
 def update_all():
-    
+    """
+    Update the application by cloning the latest repo and replacing files,
+    excluding config/history/favorites.
+    """
     version_file = os.path.join(dst_dir, "version.json")
-    
+    # Remove version file if exists
     if os.path.exists(version_file):
         os.remove(version_file)
         logger.info(f"UPDATE: Deleted : {version_file}")
 
+    # Remove previous update_files directory
     if os.path.isdir(src_dir):
         shutil.rmtree(src_dir, ignore_errors=True)
 
+    # Clone repo to update_files
     porcelain.clone(repo_url, src_dir)
 
     if not os.path.isdir(src_dir):
@@ -47,12 +52,14 @@ def update_all():
             f"The source file '{src_dir}' is missing after cloning."
         )
 
+    # Remove old folders
     for folder in FOLDERS_TO_REMOVE:
         folder_path = os.path.join(dst_dir, folder)
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path, ignore_errors=True)
             logger.info(f"UPDATE: Deleted : {folder_path}")
 
+    # Move new files, skipping excluded ones
     for root, dirs, files in os.walk(src_dir):
         rel_root = os.path.relpath(root, src_dir)
         if rel_root.startswith(".git"):
@@ -75,6 +82,7 @@ def update_all():
 
             shutil.move(src_path, dst_path)
 
+    # Clean up update_files
     shutil.rmtree(src_dir, ignore_errors=True)
 
     logger.info("UPDATE: Update ended.")
