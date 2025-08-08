@@ -45,7 +45,7 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt update
-          sudo apt install -y python3-pip ruby ruby-dev rpm snapd
+          sudo apt install -y python3-pip ruby ruby-dev rpm snap snapd
           sudo gem install --no-document fpm
           sudo snap refresh snapd
           sudo systemctl restart snapd
