@@ -1,4 +1,3 @@
-
 from src.App import main
 from src.ConsoleLogger import logger
 

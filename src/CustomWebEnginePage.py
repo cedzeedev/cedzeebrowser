@@ -35,7 +35,6 @@ def get_enabled_extensions(current_url):
     scripts = []
 
     for ext_name in os.listdir(extensions_dir):
-
         ext_path = os.path.join(extensions_dir, ext_name)
         config_path = os.path.join(ext_path, "config.json")
         main_js_path = os.path.join(ext_path, "main.js")
@@ -94,7 +93,6 @@ class CustomWebEnginePage(QWebEnginePage):
     def acceptNavigationRequest(self, url: QUrl, nav_type, isMainFrame):
         """Handle navigation requests, especially for cedzee:// URLs."""
         if url.scheme() == "cedzee":
-
             target = url.toString().replace("cedzee://", "")
             real_path = mapping_urls.get(target)
 

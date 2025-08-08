@@ -12,7 +12,7 @@ resources = [
     ("web", "web"),
     ("offline", "offline"),
     ("version.json", "."),
-    ("src", "src")
+    ("src", "src"),
 ]
 
 args = [
@@ -23,7 +23,7 @@ args = [
     "--clean",
     "--distpath=build_win",
     "--workpath=build/build",
-    "--specpath=build/specs"
+    "--specpath=build/specs",
 ]
 
 for src, dest in resources:

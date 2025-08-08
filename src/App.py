@@ -883,19 +883,11 @@ class BrowserWindow(QMainWindow):
 
         local_file_urls = {
             QUrl.fromLocalFile(mapping_urls["home"]).toString(): "cedzee://home",
-            QUrl.fromLocalFile(
-                mapping_urls["history"]
-            ).toString(): "cedzee://history",
-            QUrl.fromLocalFile(
-                mapping_urls["update"]
-            ).toString(): "cedzee://update",
-            QUrl.fromLocalFile(
-                mapping_urls["offline"]
-            ).toString(): "cedzee://offline",
+            QUrl.fromLocalFile(mapping_urls["history"]).toString(): "cedzee://history",
+            QUrl.fromLocalFile(mapping_urls["update"]).toString(): "cedzee://update",
+            QUrl.fromLocalFile(mapping_urls["offline"]).toString(): "cedzee://offline",
             QUrl.fromLocalFile(mapping_urls["game"]).toString(): "cedzee://game",
-            QUrl.fromLocalFile(
-                mapping_urls["welcome"]
-            ).toString(): "cedzee://welcome",
+            QUrl.fromLocalFile(mapping_urls["welcome"]).toString(): "cedzee://welcome",
             QUrl.fromLocalFile(
                 mapping_urls["favorites"]
             ).toString(): "cedzee://favorites",
