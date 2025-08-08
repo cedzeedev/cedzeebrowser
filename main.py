@@ -1,5 +1,5 @@
 
-from src.fApp import main
+from src.App import main
 from src.ConsoleLogger import logger
 
 r"""

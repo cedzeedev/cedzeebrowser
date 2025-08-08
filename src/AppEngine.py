@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup
 
-from src.fBridge import CedzeeBridge
+from src.Bridge import CedzeeBridge
 from src.ConsoleLogger import logger
 from src.CustomWebEnginePage import CustomWebEnginePage, directory, mapping_urls
 
