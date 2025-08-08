@@ -33,6 +33,10 @@ def get_enabled_extensions(current_url):
     """
     extensions_dir = os.path.join(directory, "extensions")
     scripts = []
+    
+    if not os.path.exists(extensions_dir):
+        logger.warning(f"Extensions directory not found: {extensions_dir}")
+        return scripts
 
     for ext_name in os.listdir(extensions_dir):
         ext_path = os.path.join(extensions_dir, ext_name)
