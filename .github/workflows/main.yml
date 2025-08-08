@@ -47,8 +47,8 @@ jobs:
           sudo apt update
           sudo apt install -y python3-pip ruby ruby-dev rpm snapd
           sudo gem install --no-document fpm
-          snap refresh snapd
-          systemctl restart snapd
+          sudo snap refresh snapd
+          sudo systemctl restart snapd
           sudo snap install snapcraft --classic
 
       - name: Install Python dependencies
