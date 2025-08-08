@@ -7,12 +7,13 @@ directory = os.path.dirname(os.path.abspath(__file__))
 separator = ";" if platform.system() == "Windows" else ":"
 
 resources = [
+    ("extensions", "extensions"),
     ("resources", "resources"),
     ("theme", "theme"),
     ("web", "web"),
     ("offline", "offline"),
     ("version.json", "."),
-    ("src", "src"),
+    ("src", "src")
 ]
 
 args = [
@@ -23,7 +24,7 @@ args = [
     "--clean",
     "--distpath=build_win",
     "--workpath=build/build",
-    "--specpath=build/specs",
+    "--specpath=build/specs"
 ]
 
 for src, dest in resources:

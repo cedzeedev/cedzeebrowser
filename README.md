@@ -34,7 +34,7 @@ If you wish to contribute to the project, I recommend focusing on the features o
 > - **Constants**: FULL MAJ
 > - **⚠️**: Use [logger](src/ConsoleLogger.py) instead of `print`
 >
-> Please use **Ruff formatter**
+> Please use [**Ruff formatter**](https://github.com/astral-sh/ruff)
 >
 > **Please document your code using a comment** (`#`)
 >
