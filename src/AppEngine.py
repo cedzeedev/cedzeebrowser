@@ -435,7 +435,6 @@ if __name__ == "__main__":
     initial_load_url = mapping_urls["home"]
 
     if len(sys.argv) > 1:
-
         arg_path = sys.argv[1]
 
         if os.path.exists(arg_path):
