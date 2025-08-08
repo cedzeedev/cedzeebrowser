@@ -10,30 +10,27 @@ from src.ConsoleLogger import logger
 from functools import wraps
 from urllib.parse import quote
 
-from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal, QVariant
-from PyQt6.QtWebEngineCore import QWebEngineProfile
-from PyQt6.QtWebEngineCore import QWebEnginePage
+from PyQt6.QtCore import QObject, pyqtSlot, pyqtSignal
+from PyQt6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
 
 try:
-
     import requests
-
 except ImportError:
-
     logger.error(
         "requests library not installed. Please install it using 'pip install requests'."
     )
     requests = None
 
-
-# Directory
-directory = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
+# Get project root directory
+directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 CONFIG_FILE = f"{directory}/resources/config.json"
 
+
 def path_to_uri(path):
+    """
+    Convert a local file path to a file:// URI.
+    """
     path = os.path.abspath(path)
     system = platform.system()
 
@@ -51,6 +48,10 @@ def path_to_uri(path):
 
 
 def require_local_url(method):
+    """
+    Decorator: Only allow method if current page is local.
+    """
+
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         if not self.web_page:
@@ -65,6 +66,10 @@ def require_local_url(method):
 
 
 class CedzeeBridge(QObject):
+    """
+    Bridge for JS <-> Python communication in Cedzee browser.
+    """
+
     settingChanged = pyqtSignal(str, str)
 
     def __init__(self, parent=None):
@@ -93,6 +98,9 @@ class CedzeeBridge(QObject):
     @pyqtSlot(str, str)
     @require_local_url
     def set(self, key: str, value: str):
+        """
+        Set a config value and emit signal.
+        """
         self._config[key] = value
         self._save_config()
         self.settingChanged.emit(key, value)
@@ -100,11 +108,17 @@ class CedzeeBridge(QObject):
     @pyqtSlot(str, result=str)
     @require_local_url
     def get(self, key: str) -> str:
+        """
+        Get a config value.
+        """
         return self._config.get(key, "")
 
     @pyqtSlot(str, "QVariantMap", result="QVariantMap")
     @require_local_url
     def fetchUrl(self, url: str, init: dict) -> dict:
+        """
+        Fetch a URL (GET/POST) and return response as dict.
+        """
         method = init.get("method", "GET").upper()
         headers = init.get("headers", {}) or {}
         body = init.get("body", None)
@@ -148,6 +162,9 @@ class CedzeeBridge(QObject):
     @pyqtSlot()
     @require_local_url
     def update(self):
+        """
+        Run update_all() to update the app.
+        """
         try:
             update_all()
             logger.info("update_all() launched successfully")
@@ -157,6 +174,9 @@ class CedzeeBridge(QObject):
     @pyqtSlot(result=str)
     @require_local_url
     def get_mode(self) -> str:
+        """
+        Return app mode (app/py).
+        """
         if directory.endswith("_internal"):
             return "app"
         else:
@@ -165,26 +185,37 @@ class CedzeeBridge(QObject):
     @pyqtSlot(result="QVariantMap")
     @require_local_url
     def getAll(self) -> dict:
+        """
+        Return all config as dict.
+        """
         return self._config
 
     @pyqtSlot()
     @require_local_url
     def clearCache(self):
+        """
+        Clear browser HTTP cache.
+        """
         if self.web_profile:
             self.web_profile.clearHttpCache()
 
     @pyqtSlot()
     @require_local_url
     def clearCookies(self):
+        """
+        Delete all browser cookies.
+        """
         if self.web_profile:
             self.web_profile.cookieStore().deleteAllCookies()
 
     @pyqtSlot()
     @require_local_url
     def ClearAll(self):
+        """
+        Clear all browser data and history.
+        """
         try:
             if self.web_profile:
-
                 self.web_profile.clearHttpCache
                 self.web_profile.cookieStore().deleteAllCookies
 
@@ -201,6 +232,9 @@ class CedzeeBridge(QObject):
     @pyqtSlot(result=str)
     @require_local_url
     def VerifyUpdate(self) -> str:
+        """
+        Check if update is available.
+        """
         version_json_url = "https://raw.githubusercontent.com/cedzeedev/cedzeebrowser/refs/heads/main/version.json"
         version_file_pth = f"{directory}/version.json"
         try:
@@ -246,6 +280,9 @@ class CedzeeBridge(QObject):
     @pyqtSlot(result=str)
     @require_local_url
     def get_version(self) -> str:
+        """
+        Return current app version.
+        """
         version_file_pth = f"{directory}/version.json"
         try:
             with open(version_file_pth, "r", encoding="utf-8") as file:

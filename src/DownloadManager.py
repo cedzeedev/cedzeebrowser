@@ -1,4 +1,3 @@
-
 # Thanks to Slohwnix
 
 import os
@@ -17,7 +16,6 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QFrame,
 )
-
 from PyQt6.QtCore import (
     Qt,
     QSize,
@@ -28,17 +26,18 @@ from PyQt6.QtCore import (
     QThread,
     pyqtSlot,
 )
-
 from PyQt6.QtWebEngineCore import QWebEngineDownloadRequest
 from PyQt6.QtGui import QDesktopServices
 
-# Directory
-directory = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
+# Get project root directory
+directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class DownloadFileWorker(QObject):
+    """
+    Worker for loading/saving download history in a thread.
+    """
+
     history_loaded = pyqtSignal(list)
     error = pyqtSignal(str)
 
@@ -70,6 +69,10 @@ class DownloadFileWorker(QObject):
 
 
 class DummyDownloadRequest(QObject):
+    """
+    Dummy download item for representing completed downloads in history.
+    """
+
     stateChanged = pyqtSignal()
 
     def __init__(self, filename, path, parent=None):
@@ -98,6 +101,10 @@ class DummyDownloadRequest(QObject):
 
 
 class DownloadItemWidget(QFrame):
+    """
+    Widget for displaying a single download item (active or history).
+    """
+
     delete_requested = pyqtSignal(QWidget)
 
     def __init__(self, download_item, parent=None):
@@ -164,6 +171,9 @@ class DownloadItemWidget(QFrame):
         return QSize(super().sizeHint().width(), 80)
 
     def update_state(self):
+        """
+        Update UI based on download state.
+        """
         state = self.download_item.state()
 
         is_in_progress = (
@@ -213,6 +223,9 @@ class DownloadItemWidget(QFrame):
                 pass
 
     def update_progress(self):
+        """
+        Update progress bar and status label.
+        """
         if (
             self.download_item.state()
             != QWebEngineDownloadRequest.DownloadState.DownloadInProgress
@@ -260,6 +273,10 @@ class DownloadItemWidget(QFrame):
 
 
 class DownloadManager(QWidget):
+    """
+    Download manager window for showing active and completed downloads.
+    """
+
     DOWNLOAD_HISTORY_FILE = f"{directory}/resources/saves/download_history.json"
     request_save_history = pyqtSignal(list)
 
@@ -293,6 +310,9 @@ class DownloadManager(QWidget):
         self.worker_thread.start()
 
     def apply_stylesheet(self):
+        """
+        Apply browser theme to download manager.
+        """
         try:
             css_path = os.path.abspath(f"{directory}/theme/browser.css")
             if os.path.exists(css_path):
@@ -305,6 +325,9 @@ class DownloadManager(QWidget):
 
     @pyqtSlot(QWebEngineDownloadRequest)
     def add_download(self, download_item: QWebEngineDownloadRequest):
+        """
+        Add a new active download to the list.
+        """
         if download_item in self.active_download_items:
             return
 
@@ -324,6 +347,9 @@ class DownloadManager(QWidget):
         self.show()
 
     def on_download_state_changed(self, state, download_item):
+        """
+        Handle download completion and update history.
+        """
         if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
             file_path = download_item.downloadFileName()
             if os.path.exists(file_path):
@@ -351,6 +377,9 @@ class DownloadManager(QWidget):
 
     @pyqtSlot(list)
     def on_history_loaded(self, history):
+        """
+        Load completed downloads from history file.
+        """
         self.completed_downloads_history = history
         for item_info in reversed(self.completed_downloads_history):
             dummy_item = DummyDownloadRequest(
@@ -368,6 +397,9 @@ class DownloadManager(QWidget):
 
     @pyqtSlot(QWidget)
     def remove_item_widget(self, widget_to_remove):
+        """
+        Remove a download item from the list and history.
+        """
         for i in range(self.list_widget.count()):
             item = self.list_widget.item(i)
             widget = self.list_widget.itemWidget(item)
@@ -389,6 +421,9 @@ class DownloadManager(QWidget):
         logger.error(message)
 
     def closeEvent(self, event):
+        """
+        Clean up worker thread on close.
+        """
         self.worker_thread.quit()
         self.worker_thread.wait()
         super().closeEvent(event)

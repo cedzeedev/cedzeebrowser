@@ -9,8 +9,9 @@ from pathlib import Path
 from urllib.parse import urlparse, unquote
 from bs4 import BeautifulSoup
 
-from src.bridge import CedzeeBridge
+from src.Bridge import CedzeeBridge
 from src.ConsoleLogger import logger
+from src.CustomWebEnginePage import CustomWebEnginePage, directory, mapping_urls
 
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import (
@@ -21,13 +22,10 @@ from PyQt6.QtCore import (
     QThread,
     pyqtSignal,
 )
-from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import (
     QWebEngineProfile,
-    QWebEnginePage,
     QWebEngineDownloadRequest,
-    QWebEngineCertificateError,
     QWebEngineUrlRequestInterceptor,
     QWebEngineUrlRequestInfo,
 )
@@ -39,6 +37,7 @@ from PyQt6.QtWidgets import (
     QFileDialog,
 )
 
+# Set Chromium flags for better performance
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--enable-gpu "
     "--enable-webgl "
@@ -49,21 +48,6 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--use-gl=angle "
     "--enable-native-gpu-memory-buffers"
 )
-
-# Directory
-directory = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
-
-home_url = "https://www.youtube.com"
-offline_url = os.path.abspath(f"{directory}/offline/index.html")
-history_page_url = os.path.abspath(f"{directory}/web/history.html")
-update_page_url = os.path.abspath(f"{directory}/web/update.html")
-game_url = os.path.abspath(f"{directory}/offline/game.html")
-welcome_url = os.path.abspath(f"{directory}/web/welcome.html")
-contributors_url = os.path.abspath(f"{directory}/web/contributors.html")
-favorites_url = os.path.abspath(f"{directory}/web/favorites.html")
-
 Window_width = 1200
 Window_height = 800
 Window_Title = "CEDZEE Browser"
@@ -72,6 +56,10 @@ CONFIG_FILE = os.path.abspath(f"{directory}/resources/config.json")
 
 
 class Worker(QObject):
+    """
+    Generic worker for running functions in a QThread.
+    """
+
     finished = pyqtSignal()
     result = pyqtSignal(object)
     error = pyqtSignal(tuple)
@@ -94,54 +82,22 @@ class Worker(QObject):
 
 
 class NetworkRequestLogger(QWebEngineUrlRequestInterceptor):
+    """
+    Logs network requests (currently does nothing).
+    """
+
     def interceptRequest(self, info: QWebEngineUrlRequestInfo):
         url = info.requestUrl().toString()
         method = info.requestMethod().data().decode("utf-8")
         resource_type = info.resourceType()
-
-
-class CustomWebEnginePage(QWebEnginePage):
-    def __init__(self, profile, parent=None, browser_window=None):
-        super().__init__(profile, parent)
-        self.browser_window = browser_window
-
-    def createWindow(self, _type):
-        if self.browser_window and self.browser_window.browser:
-            return self.browser_window.browser.page()
-        return super().createWindow(_type)
-
-    def acceptNavigationRequest(self, url: QUrl, nav_type, isMainFrame):
-        if url.scheme() == "cedzee":
-            target = url.toString().replace("cedzee://", "")
-            mapping = {
-                "home": home_url,
-                "history": history_page_url,
-                "update": update_page_url,
-                "offline": offline_url,
-                "game": game_url,
-                "welcome": welcome_url,
-                "contributors": contributors_url,
-                "favorites": favorites_url,
-            }
-            real_path = mapping.get(target)
-            if real_path:
-                self.setUrl(QUrl.fromLocalFile(real_path))
-            else:
-                logger.error(
-                    f"Unknown cedzee:// path: {url.toString()}. Loading home."
-                )
-                self.setUrl(QUrl.fromLocalFile(home_url))
-            return False
-        return super().acceptNavigationRequest(url, nav_type, isMainFrame)
-
-    def certificateError(self, certificate_error: QWebEngineCertificateError):
-        logger.error(
-            f"Certificate error detected for {certificate_error.url().toString()}: {certificate_error.errorDescription()}"
-        )
-        return True
+        # Could log or process requests here
 
 
 class BrowserWindow(QMainWindow):
+    """
+    Main browser window for Cedzee Browser.
+    """
+
     def __init__(self):
         super().__init__()
         self.ensure_history_file()
@@ -176,7 +132,9 @@ class BrowserWindow(QMainWindow):
             logger.error("browser.css not found.")
 
         self.browser = QWebEngineView()
-        page = CustomWebEnginePage(self.profile, self.browser, browser_window=self)
+        page = CustomWebEnginePage(
+            self.profile, self.browser, browser_window=self, open_as="app"
+        )
         self.browser.setPage(page)
 
         self._attach_webchannel(self.browser)
@@ -201,7 +159,7 @@ class BrowserWindow(QMainWindow):
         )
 
     def go_home(self):
-        self.browser.setUrl(QUrl(home_url))
+        self.browser.setUrl(QUrl(mapping_urls["home"]))
 
     @staticmethod
     def _is_internet_available_worker() -> bool:
@@ -212,6 +170,7 @@ class BrowserWindow(QMainWindow):
             return False
 
     def handle_load_finished(self, ok: bool):
+        # If page failed to load, check internet and show offline page if needed
         if not ok:
             current_url = self.browser.url()
             if not current_url.isLocalFile() and current_url.scheme() in (
@@ -231,13 +190,12 @@ class BrowserWindow(QMainWindow):
                 self.thread.start()
         else:
             self.save_to_history(self.browser.url().toString(), self.browser.title())
+            self.browser.page().inject_extensions(self.browser.url())
 
     def _handle_internet_check_result(self, is_available):
         if not is_available:
-            logger.info(
-                "No Internet connection detected. Displaying offline page."
-            )
-            self.browser.setUrl(QUrl.fromLocalFile(offline_url))
+            logger.info("No Internet connection detected. Displaying offline page.")
+            self.browser.setUrl(QUrl.fromLocalFile(mapping_urls.get("offline")))
 
     def update_window_title(self, title):
         self.setWindowTitle(title)
@@ -259,6 +217,7 @@ class BrowserWindow(QMainWindow):
             logger.error(f"Error while writing to history : {e}")
 
     def save_to_history(self, url_str: str, title: str):
+        # Only save valid URLs and titles
         if not (
             url_str.startswith("http://")
             or url_str.startswith("https://")
@@ -310,12 +269,15 @@ class BrowserWindow(QMainWindow):
         download_item.stateChanged.connect(done)
 
     def open_new_tab(self):
-        self.browser.setUrl(QUrl.fromLocalFile(home_url))
+        self.browser.setUrl(QUrl.fromLocalFile(mapping_urls["home"]))
 
     def finalize_initial_load(self, data):
+        """
+        Finalize window setup after initial load (meta tags, window state, etc).
+        """
         if data.get("error"):
             logger.error(data["error"])
-            self.browser.setUrl(QUrl.fromLocalFile(offline_url))
+            self.browser.setUrl(QUrl.fromLocalFile(mapping_urls.get("offline")))
             return
 
         local_width = Window_width
@@ -374,6 +336,9 @@ class BrowserWindow(QMainWindow):
 
 
 def perform_initial_load(url):
+    """
+    Load initial HTML and meta info from local file or URL.
+    """
     data = {
         "html_content": "",
         "final_url": url,
@@ -417,7 +382,9 @@ def perform_initial_load(url):
             data["html_content"] = response.text
         except requests.RequestException as e:
             data["error"] = f"Erreur lors du téléchargement de l'URL {url}: {e}"
-            data["final_url"] = QUrl.fromLocalFile(offline_url).toString()
+            data["final_url"] = QUrl.fromLocalFile(
+                mapping_urls.get("offline")
+            ).toString()
             return data
 
     if data["html_content"]:
@@ -451,38 +418,30 @@ def perform_initial_load(url):
 
 
 def start_app(url: str):
-    global home_url
-    home_url = url
+    """
+    Start a new browser window and load the given URL.
+    """
     window = BrowserWindow()
-    window.browser.setHtml("<h1>Chargement...</h1>")
+    window.browser.setHtml("<h1>Loading...</h1>")
+    window.finalize_initial_load(perform_initial_load(url))
 
-    thread = QThread()
-    worker = Worker(perform_initial_load, url)
-    worker.moveToThread(thread)
-
-    thread.started.connect(worker.run)
-    worker.finished.connect(thread.quit)
-    worker.finished.connect(worker.deleteLater)
-    thread.finished.connect(thread.deleteLater)
-    worker.result.connect(window.finalize_initial_load)
-    worker.error.connect(lambda e: logger.error(f"Error in the loading thread: {e}"))
-
-    thread.start()
-
-    window.loading_thread = thread
-    window.loading_worker = worker
     return window
 
 
 if __name__ == "__main__":
+    """Main entry point for the Cedzee Browser application."""
     app = QApplication(sys.argv)
 
-    initial_load_url = home_url
+    initial_load_url = mapping_urls["home"]
+
     if len(sys.argv) > 1:
+
         arg_path = sys.argv[1]
+
         if os.path.exists(arg_path):
             initial_load_url = QUrl.fromLocalFile(os.path.abspath(arg_path)).toString()
             logger.info(f"Attempt to load the local file: {initial_load_url}")
+
         else:
             logger.info(
                 f"The argument provided '{arg_path}' is not a valid file path. Loading the default homepage URL."

@@ -102,7 +102,7 @@ li label {
 }
 
 li:has(input:checked) {
-    background: linear-gradient(to right, #275a6d, #18799c);
+    background: #18799c;
 }
 
 li:hover {
