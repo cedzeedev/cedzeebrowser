@@ -9,7 +9,7 @@ from urllib.parse import urlparse, quote
 from datetime import datetime
 
 from src.AppEngine import start_app
-from src.Bridge import CedzeeBridge
+from src.fBridge import CedzeeBridge
 from src.ConsoleLogger import logger
 from src.CustomWebEnginePage import CustomWebEnginePage, directory, mapping_urls
 from src.DownloadManager import DownloadManager
