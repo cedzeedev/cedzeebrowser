@@ -18,51 +18,6 @@ pip install -r requirements.txt
 python ./main.py
 ```
 
-## 🧑‍💻 For developers
-
-If you wish to contribute to the project, I recommend focusing on the features outlined in the [TODO.md](TODO.md) and [issues](https://github.com/cedzeedev/cedzeebrowser/issues).
-
-> [!IMPORTANT]
->
-> Please respect our [organization](#️-organization)
->
-> **Code style:**
->
-> - **Functions name**: snake_case (python only)
-> - **Class name**: camelCase
-> - **Tabs**: 4 spaces
-> - **Constants**: FULL MAJ
-> - **⚠️**: Use [logger](src/ConsoleLogger.py) instead of `print`
->
-> Please use [**Ruff formatter**](https://github.com/astral-sh/ruff)
->
-> **Please document your code using a comment** (`#`)
->
-
-### 🗃️ Organization
-
-**Minimal configuration**:
-
-```txt
-.
-├── ...
-├── main.py
-├── src
-│   └── *.py
-├── offline
-│   ├── ...
-│   └── index.html
-├───resources
-│   |──...
-│   └──icons
-│       └── *.png
-├── theme
-│   ├── browser.css
-│   └── theme.css
-└── web
-    └── *.html
-```
-
 ## 🎨 Theme and color scheme
 
 - `theme/browser.css`: Qt Style Sheet for the browser UI
@@ -77,7 +32,7 @@ Contributions are most welcome by forking the repository and sending a pull requ
 
 > [!IMPORTANT]
 >
-> Please read [Note for devs](#-for-developers)
+> Please read [Code Of Conduct](CODE_OF_CONDUCT.md) and [Contributing](CONTRIBUTING.md)
 >
 
 ## 📜 Credit
