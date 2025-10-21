@@ -35,6 +35,11 @@ If you wish to contribute to the project, I recommend focusing on the features o
     └── *.html
 ```
 
+## Theme and color scheme
+
+- `theme/browser.css`: Qt Style Sheet for the browser UI
+- `theme/theme.css`: Style Sheet for web content
+
 ## Coding Rules
 
 > [!IMPORTANT]

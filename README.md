@@ -18,11 +18,6 @@ pip install -r requirements.txt
 python ./main.py
 ```
 
-## 🎨 Theme and color scheme
-
-- `theme/browser.css`: Qt Style Sheet for the browser UI
-- `theme/theme.css`: Style Sheet for web content
-
 ---
 
 ## 🤲 Contributing
