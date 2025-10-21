@@ -32,7 +32,7 @@ Contributions are most welcome by forking the repository and sending a pull requ
 
 > [!IMPORTANT]
 >
-> Please read [Code Of Conduct](CODE_OF_CONDUCT.md) and [Contributing](CONTRIBUTING.md)
+> Please read the [Code of Conduct](CODE_OF_CONDUCT.md) and [contribution guidelines](CONTRIBUTING.md)
 >
 
 ## 📜 Credit
